@@ -1,0 +1,6 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'indexer'
+allowBuilds:
+  esbuild: true

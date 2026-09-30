@@ -1,0 +1,1 @@
+{ "name": "@pactflow/indexer", "private": true, "type": "module", "scripts": { "typecheck": "tsc --noEmit" }, "dependencies": { "@pactflow/chain": "workspace:*", "@pactflow/db": "workspace:*" } }

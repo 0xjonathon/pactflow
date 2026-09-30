@@ -1,0 +1,1 @@
+{ "name": "@pactflow/db", "version": "0.1.0", "private": true, "type": "module", "exports": { ".": "./src/schema.ts" }, "scripts": { "typecheck": "tsc --noEmit" }, "dependencies": { "drizzle-orm": "^0.44.0", "postgres": "^3.4.7" } }

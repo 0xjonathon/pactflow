@@ -1,0 +1,26 @@
+{
+  "name": "pactflow",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "typecheck": "tsc -p scripts/tsconfig.json --noEmit && turbo run typecheck",
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "contracts:abi": "node --import tsx scripts/generate-abis.ts",
+    "deploy:testnet": "node --import tsx scripts/deploy-testnet.ts",
+    "deploy:record": "node --import tsx scripts/record-deployment.ts",
+    "wallets:check": "node --import tsx scripts/check-wallets.ts",
+    "smoke:testnet": "node --import tsx scripts/testnet-smoke.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.20.0",
+    "dotenv": "^17.0.0",
+    "viem": "^2.40.0"
+    ,"@pactflow/chain": "workspace:*"
+    ,"@pactflow/sdk": "workspace:*"
+  }
+}

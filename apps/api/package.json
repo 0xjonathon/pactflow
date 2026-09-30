@@ -1,0 +1,8 @@
+{
+  "name": "@pactflow/api",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "tsx watch src/server.ts", "build": "tsc --noEmit", "typecheck": "tsc --noEmit" },
+  "dependencies": { "fastify": "^5.5.0", "@pactflow/shared": "workspace:*" },
+  "devDependencies": { "tsx": "^4.20.0" }
+}

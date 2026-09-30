@@ -1,0 +1,6 @@
+{
+  "name": "@pactflow/verifier",
+  "private": true,
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": { "@pactflow/chain": "workspace:*", "viem": "^2.37.0" }
+}

@@ -1,0 +1,16 @@
+node_modules/
+.DS_Store
+.pnpm-store/
+.turbo/
+packages/contracts/lib/
+*.tsbuildinfo
+.next/
+dist/
+out/
+cache/
+coverage/
+.env
+.env.local
+.env.*.local
+broadcast/
+*.log
