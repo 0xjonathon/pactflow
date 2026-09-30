@@ -37,9 +37,9 @@ if (clientMon < 1_000_000_000_000_000_000n || workerMon < 1_000_000_000_000_000_
 }
 const token = deployed.SettlementToken;
 const metadata = await sdk.getTokenMetadata(token);
-const budget = parseUnits("0.10", metadata.decimals);
-const clientBond = parseUnits("0.01", metadata.decimals);
-const workerBond = parseUnits("0.01", metadata.decimals);
+const budget = parseUnits("5", metadata.decimals);
+const clientBond = parseUnits("1", metadata.decimals);
+const workerBond = parseUnits("1", metadata.decimals);
 const [clientBefore, workerBefore, clientRepBefore, workerRepBefore] = await Promise.all([
   sdk.getTokenBalance(token, client.address), sdk.getTokenBalance(token, worker.address),
   sdk.getReputation(client.address), sdk.getReputation(worker.address),
@@ -50,10 +50,10 @@ if (clientBefore < budget + clientBond || workerBefore < workerBond) {
 
 const now = BigInt(Math.floor(Date.now() / 1000));
 const agreement: CanonicalValue = {
-  version: 1, title: "PactFlow Monad Testnet smoke", description: "One milestone settlement between two real wallets",
+  version: 1, title: "PactFlow Testnet Genesis Pact", description: "One milestone settlement between two real wallets",
   client: client.address, worker: worker.address, token, budget: budget.toString(),
   clientBond: clientBond.toString(), workerBond: workerBond.toString(),
-  milestone: { title: "Smoke deliverable", description: "Submit canonical evidence", amount: budget.toString() },
+  milestone: { title: "Complete Phase 2 Monad integration", description: "Submit canonical evidence", amount: budget.toString() },
 };
 const agreementHash = hashAgreement(agreement);
 const create = await sdk.createPact(client, {
@@ -88,6 +88,9 @@ const deliverable: CanonicalValue = {
 const deliverableHash = hashAgreement(deliverable);
 const submitTx = await sdk.submitMilestone(worker, escrow, 0n, deliverableHash, dataUriForAgreement(deliverable));
 if ((await sdk.getPact(escrow)).status !== "Submitted") throw new Error("Pact did not reach Submitted state");
+const [clientBeforeSettlement, workerBeforeSettlement, escrowBeforeSettlement] = await Promise.all([
+  sdk.getTokenBalance(token, client.address), sdk.getTokenBalance(token, worker.address), sdk.getTokenBalance(token, escrow),
+]);
 const settlementTx = await sdk.approveMilestone(client, escrow, 0n);
 const [finalPact, clientAfter, workerAfter, clientRepAfter, workerRepAfter, escrowBalance] = await Promise.all([
   sdk.getPact(escrow), sdk.getTokenBalance(token, client.address), sdk.getTokenBalance(token, worker.address),
@@ -97,6 +100,11 @@ const escrowFeeBps = await publicClient.readContract({ address: escrow, abi: pac
 const fee = budget * BigInt(escrowFeeBps) / 10_000n;
 if (finalPact.status !== "Completed" || finalPact.milestones[0]?.status !== "Paid" ||
     finalPact.releasedBudget !== budget || finalPact.clientBond !== 0n || finalPact.workerBond !== 0n ||
+    finalPact.fundedBudget !== budget || finalPact.settlementToken.toLowerCase() !== token.toLowerCase() ||
+    finalPact.client.toLowerCase() !== client.address.toLowerCase() || finalPact.worker?.toLowerCase() !== worker.address.toLowerCase() ||
+    finalPact.milestones[0].amount !== budget || finalPact.milestones[0].deliverableHash.toLowerCase() !== deliverableHash.toLowerCase() ||
+    clientBeforeSettlement !== clientBefore - budget - clientBond || workerBeforeSettlement !== workerBefore - workerBond ||
+    escrowBeforeSettlement !== budget + clientBond + workerBond ||
     escrowBalance !== 0n || workerAfter - workerBefore !== budget - fee ||
     clientAfter !== clientBefore - budget ||
     clientRepAfter.completedPacts !== clientRepBefore.completedPacts + 1n ||
@@ -118,8 +126,12 @@ const lines = [
   `- Submit TX: [${submitTx}](${getExplorerTxUrl(submitTx)})`,
   `- Settlement TX: [${settlementTx}](${getExplorerTxUrl(settlementTx)})`,
   `- Agreement hash: ${agreementHash}`, `- Worker ${metadata.symbol} before: ${format(workerBefore)}`,
+  `- Before settlement — Client: ${format(clientBeforeSettlement)}, Worker: ${format(workerBeforeSettlement)}, Escrow: ${format(escrowBeforeSettlement)}`,
   `- Worker ${metadata.symbol} after: ${format(workerAfter)}`,
+  `- After settlement — Client: ${format(clientAfter)}, Worker: ${format(workerAfter)}, Escrow: ${format(escrowBalance)}`,
   `- Worker difference: ${format(workerAfter - workerBefore)}`,
+  `- Fee basis points at Pact creation: ${escrowFeeBps}`,
+  `- Final Pact status: ${finalPact.status}; milestone: ${finalPact.milestones[0].status}; funded: ${format(finalPact.fundedBudget)}; released: ${format(finalPact.releasedBudget)}`,
   `- Worker completed pacts: ${workerRepBefore.completedPacts} → ${workerRepAfter.completedPacts}`,
   `- Worker settled milestones: ${workerRepBefore.settledMilestones} → ${workerRepAfter.settledMilestones}`,
   `- Worker earned (gross raw units): ${workerRepBefore.earned} → ${workerRepAfter.earned}`,

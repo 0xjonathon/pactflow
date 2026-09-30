@@ -8,7 +8,8 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "contracts:abi": "node --import tsx scripts/generate-abis.ts",
-    "deploy:testnet": "node --import tsx scripts/deploy-testnet.ts",
+    "deploy:testnet": "node --import tsx scripts/preflight-testnet.ts && node --import tsx scripts/deploy-testnet.ts",
+    "preflight:testnet": "node --import tsx scripts/preflight-testnet.ts",
     "deploy:record": "node --import tsx scripts/record-deployment.ts",
     "wallets:check": "node --import tsx scripts/check-wallets.ts",
     "smoke:testnet": "node --import tsx scripts/testnet-smoke.ts"
@@ -19,8 +20,8 @@
     "@types/node": "^22.0.0",
     "tsx": "^4.20.0",
     "dotenv": "^17.0.0",
-    "viem": "^2.40.0"
-    ,"@pactflow/chain": "workspace:*"
-    ,"@pactflow/sdk": "workspace:*"
+    "viem": "^2.40.0",
+    "@pactflow/chain": "workspace:*",
+    "@pactflow/sdk": "workspace:*"
   }
 }

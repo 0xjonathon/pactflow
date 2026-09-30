@@ -9,5 +9,5 @@ export * from "./abis";
 
 export function createPactPublicClient(rpcUrl?: string) {
   const chain = monadTestnetWithRpc(rpcUrl);
-  return createPublicClient({ chain, transport: http(rpcUrl ?? chain.rpcUrls.default.http[0]) });
+  return createPublicClient({ chain, transport: http(rpcUrl ?? chain.rpcUrls.default.http[0]), batch: { multicall: true } });
 }

@@ -19,7 +19,7 @@ contract DeployProtocol is Script {
         VerifierRegistry verifier = new VerifierRegistry(deployer);
         ReputationRegistry reputation = new ReputationRegistry(deployer);
         // PactFactory creates and locks its PactEscrow implementation internally.
-        PactFactory factory = new PactFactory(deployer, address(verifier), address(reputation), treasury, 500);
+        PactFactory factory = new PactFactory(deployer, address(verifier), address(reputation), treasury, 0);
         verifier.setFactory(address(factory));
         reputation.setFactory(address(factory));
         vm.stopBroadcast();

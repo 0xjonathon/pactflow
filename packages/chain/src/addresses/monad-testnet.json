@@ -1,0 +1,20 @@
+{
+  "chainId": 10143,
+  "deployedAt": "2026-09-30T12:52:32.000Z",
+  "deploymentBlock": 66976195,
+  "PactFactory": "0xb9d75193df4ab985e5c2a5a1b0e332946d405d1a",
+  "PactEscrowImplementation": "0x12028aC76b4769Cc489BeFCbd6ded8E61a8E6225",
+  "ReputationRegistry": "0xd8faa6cd67161c67f69bd47909a1225c82e242a3",
+  "VerifierRegistry": "0x9d8bf04dc4eab73de1df0ffc6f87ff66d4748835",
+  "SettlementToken": "0x534b2f3A21130d7a60830c2Df862319e593943A3",
+  "deploymentTxHashes": {
+    "VerifierRegistry": "0xc52ae1b1d33cc35f5a84c8e0d7a51f5ece3efec6635f90504ab3371b9599de6a",
+    "ReputationRegistry": "0x7f5b1622325784f2c8ebfdf7b4ae22980600065c0c6df5671c7dafd60cb43f6e",
+    "PactFactory": "0x65937b27dde041c984a9de9b3a346acca0a7d35bbac87fef0d9325f02dddb3b6"
+  },
+  "deploymentBlocks": {
+    "VerifierRegistry": 66976177,
+    "ReputationRegistry": 66976186,
+    "PactFactory": 66976195
+  }
+}
