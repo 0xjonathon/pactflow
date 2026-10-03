@@ -1,31 +1,585 @@
 "use client";
-import {useEffect,useRef,useState,type FormEvent} from 'react';
-import Link from 'next/link';
-import {useI18n,type MessageKey} from '../lib/i18n';
-import {post,useData,useSession,SignInCard,ErrorMessage,ApiError,categoryLabel,methodLabel,type Job,type Person,type Milestone} from '../lib/product';
-import {buildVerificationPolicy} from '../lib/verification';
-import {validateBrief,type BriefIssue} from '../lib/brief-validation';
-const categories=['Development','Design','Research','Data','Content'];
-function localDate(d:Date){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
-export function JobWizardPage(){
- const {t,locale}=useI18n();const {user}=useSession();const [invite,setInvite]=useState('');useEffect(()=>setInvite(new URLSearchParams(window.location.search).get('invite')??''),[]);const inviteProfile=useData<Person>(`invite-${invite}`,`/users/${invite}`,!!invite);
- const [step,setStep]=useState(1),[furthest,setFurthest]=useState(1),[issues,setIssues]=useState<BriefIssue[]>([]),[error,setError]=useState<unknown>(),[busy,setBusy]=useState(false),[published,setPublished]=useState<Job>(),[createdId,setCreatedId]=useState('');const formRef=useRef<HTMLFormElement>(null);
- const [f,setF]=useState(()=>({title:'',description:'',requirements:'',category:'Development',skills:'',budget:'300',deadline:localDate(new Date(Date.now()+14*86400_000)),verificationMode:'Hybrid',clientDeposit:'15',url:'',text:'',selector:'',performance:'80',semantic:'',minScore:'80'}));
- const [milestones,setMilestones]=useState<Milestone[]>(()=>[{title:t('form.defaultMilestone'),amount:'300',dueAt:f.deadline}]);const [advanced,setAdvanced]=useState(false);
- useEffect(()=>{if(issues.length)requestAnimationFrame(()=>formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());},[issues]);
- const problem=(field:string)=>issues.find(i=>i.field===field);
- const issueText=(i:BriefIssue)=>t(`form.${i.code}` as MessageKey);
- const clear=(field:string)=>{setIssues(v=>v.filter(i=>i.field!==field));setError(null);setCreatedId('');};
- const change=(key:keyof typeof f,value:string)=>{clear(key);setF(v=>({...v,[key]:value,...(key==='budget'?{clientDeposit:String(Math.round(Number(value)*.05*1e6)/1e6)}:{})}));if(key==='budget'&&milestones.length===1)setMilestones(v=>[{...v[0],amount:value}]);if(key==='deadline')setMilestones(v=>v.map(m=>m.dueAt===f.deadline?{...m,dueAt:value}:m));};
- const feedback=(key:string)=>problem(key)?<span id={`error-${key}`} className="field-error">{issueText(problem(key)!)}</span>:null;
- const field=(key:keyof typeof f,label:MessageKey,type='text')=><label className="wizard-field">{t(label)}{['description','requirements','semantic'].includes(key)?<textarea aria-label={t(label)} value={f[key]} aria-invalid={!!problem(key)} aria-describedby={problem(key)?`error-${key}`:undefined} onChange={e=>change(key,e.target.value)}/>:<input aria-label={t(label)} type={type} step={type==='number'?'0.000001':undefined} min={type==='number'?'0':undefined} value={f[key]} aria-invalid={!!problem(key)} aria-describedby={problem(key)?`error-${key}`:undefined} onChange={e=>change(key,e.target.value)}/>}<span className="field-hint">{key==='title'?t('form.titleHint'):key==='description'?t('form.descriptionHint'):key==='deadline'?t('form.localTime'):key==='url'?t('form.urlHint'):''}</span>{feedback(key)}</label>;
- const policy=()=>f.verificationMode==='ClientOnly'?null:buildVerificationPolicy({preset:'WEBSITE',mode:f.verificationMode==='Hybrid'?'HYBRID':'AI_ONLY',url:f.url,requiredText:f.text,selector:f.selector,minPerformance:Number(f.performance),semanticRequirement:f.semantic,minScore:Number(f.minScore)});
- const validate=(only?:number)=>{const found=validateBrief(f,milestones,only);if(found.length){setIssues(found);setStep(found[0].step);return false;}setIssues([]);return true;};
- const submit=async(e:FormEvent)=>{e.preventDefault();setError(null);if(!validate(step===5?undefined:step))return;if(step<5){setStep(step+1);setFurthest(v=>Math.max(v,step+1));return;}setBusy(true);try{let id=createdId;if(!id){const created=await post<Job>('/jobs',{title:f.title.trim(),description:f.description.trim(),requirements:f.requirements,category:f.category,skills:f.skills.split(/[,，]/).map(v=>v.trim()).filter(Boolean),budget:f.budget,deadline:new Date(f.deadline).toISOString(),milestones:milestones.map(m=>({...m,title:m.title.trim(),dueAt:new Date(m.dueAt).toISOString()})),verificationMode:f.verificationMode,policy:policy(),clientDeposit:f.clientDeposit,workerDeposit:'0'});id=created.id;setCreatedId(id);}const live=await post<Job>(`/jobs/${id}/publish`);setPublished(live);if(inviteProfile.data)try{await post(`/jobs/${id}/invite`,{handle:inviteProfile.data.handle});}catch{/* Publishing succeeded; invitation can be sent separately. */}}catch(e){if(e instanceof ApiError&&e.issues.length){const mapped=e.issues.map(i=>({field:i.path.join('.'),code:i.message.startsWith('form.')?i.message.slice(5):i.path[0]==='title'?'titleLength':i.path[0]==='description'?'descriptionLength':i.path[0]==='budget'?'positiveAmount':i.path[0]==='clientDeposit'?'nonnegativeAmount':i.path[0]==='skills'?'skillsLength':i.path[0]==='policy'?'policyMismatch':'serverField',step:i.path[0]==='milestones'||i.path[0]==='budget'||i.path[0]==='deadline'?2:i.path[0]==='policy'?3:i.path[0]==='clientDeposit'?4:1}));setIssues(mapped);setStep(mapped[0].step);}else setError(e);}finally{setBusy(false);}};
- const names=['One','Two','Three','Four','Five'];
- return <main className="shell narrow"><div className="page-title"><h1>{t('marketplace.post')}</h1><p>{t('jobs.matchingHelp')}</p></div>{inviteProfile.data&&<p className="notice">{t('jobs.inviting',{name:inviteProfile.data.displayName})}</p>}{!published&&<ol className="wizard-navigation">{names.map((name,i)=><li key={name}><button type="button" disabled={busy||i+1>furthest} aria-current={step===i+1?'step':undefined} onClick={()=>{setStep(i+1);setIssues([]);setError(null);}}><span>{i+1}</span><small>{t(`jobs.step${name}` as MessageKey)}</small></button></li>)}</ol>}
- {published?<section className="card"><span className="pill">✓ {t('jobs.published')}</span><h2>{published.title}</h2><Link className="button" href={`/jobs/${published.id}`}>{t('common.details')} ↗</Link></section>:<form ref={formRef} noValidate className="card wizard" onSubmit={submit}><p className="small">{t('form.stepCount',{step})}</p><h2>{t(`jobs.step${names[step-1]}` as MessageKey)}</h2>
- {issues.length>0&&<div className="validation-summary" role="alert"><strong>{t('form.fixFields')}</strong><ul>{issues.map(i=><li key={i.field}><button type="button" onClick={()=>{setStep(i.step);requestAnimationFrame(()=>document.getElementById(`error-${i.field}`)?.previousElementSibling?.scrollIntoView({block:'center'}));}}>{issueText(i)}</button></li>)}</ul></div>}
- {step===1?<>{field('title','jobs.title')}{field('description','jobs.description')}<label>{t('marketplace.category')}<select value={f.category} onChange={e=>change('category',e.target.value)}>{categories.map(c=><option key={c} value={c}>{categoryLabel(c,t)}</option>)}</select></label>{field('skills','jobs.skills')}{field('requirements','jobs.requirements')}</>:step===2?<>{field('budget','jobs.amount','number')}{field('deadline','marketplace.deadline','datetime-local')}<h3>{t('jobs.milestones')}</h3><p className="small">{t('form.totalHint',{total:milestones.reduce((v,m)=>v+(Number(m.amount)||0),0),budget:f.budget})}</p>{feedback('milestones')}{milestones.map((m,i)=><div className="milestone-editor" key={i}>{(['title','amount','dueAt'] as const).map(key=><label key={key}>{t(key==='title'?'jobs.title':key==='amount'?'jobs.amount':'marketplace.deadline')}<input type={key==='amount'?'number':key==='dueAt'?'datetime-local':'text'} step={key==='amount'?'0.000001':undefined} value={m[key]} aria-invalid={!!problem(`milestones.${i}.${key}`)} aria-describedby={problem(`milestones.${i}.${key}`)?`error-milestones.${i}.${key}`:undefined} onChange={e=>{clear(`milestones.${i}.${key}`);clear('milestones');setMilestones(v=>v.map((x,j)=>j===i?{...x,[key]:e.target.value}:x));}}/>{feedback(`milestones.${i}.${key}`)}</label>)}{milestones.length>1&&<button type="button" className="secondary" onClick={()=>{setMilestones(v=>v.filter((_,j)=>j!==i));setIssues([]);}}>{t('jobs.remove')}</button>}</div>)}<button type="button" className="secondary" disabled={milestones.length>=32} onClick={()=>setMilestones(v=>[...v,{title:'',amount:'0',dueAt:f.deadline}])}>{t('jobs.addMilestone')}</button></>:step===3?<><div className="choice-grid">{['ClientOnly','AIOnly','Hybrid'].map(m=><button type="button" key={m} aria-pressed={f.verificationMode===m} className={f.verificationMode===m?'choice selected':'choice'} onClick={()=>change('verificationMode',m)}>{methodLabel(m,t)}{m==='Hybrid'&&<small>{t('jobs.recommended')}</small>}</button>)}</div><p className="small">{t(f.verificationMode==='ClientOnly'?'form.clientMode':f.verificationMode==='Hybrid'?'form.hybridMode':'form.aiMode')}</p>{f.verificationMode!=='ClientOnly'&&<div className="verification-builder"><p>✓ {t('jobs.reachable')}</p>{field('url','jobs.expectedUrl','url')}{field('text','jobs.requiredText')}<label>{t('jobs.element')}<select value={f.selector} onChange={e=>change('selector',e.target.value)}>{[['','jobs.noElement'],["[data-testid='connect-wallet']",'jobs.walletElement'],['h1','jobs.headingElement'],['nav','jobs.navigationElement'],['form','jobs.formElement']].map(([value,key])=><option key={value} value={value}>{t(key as MessageKey)}</option>)}</select></label>{field('performance','jobs.performance','number')}{field('semantic','jobs.semantic')}{field('minScore','verification.minScore','number')}<button type="button" className="secondary" aria-expanded={advanced} onClick={()=>setAdvanced(!advanced)}>{t('jobs.advanced')}</button>{advanced&&<>{field('selector','verification.requiredSelector')}<pre>{(()=>{try{return JSON.stringify(policy(),null,2);}catch{return t('errors.INVALID_POLICY');}})()}</pre></>}</div>}</>:step===4?<><div className="payment-explanation"><strong>{t('form.noWorkerDeposit')}</strong><p>{t('form.protectionHelp')}</p></div>{field('clientDeposit','jobs.clientDeposit','number')}<p className="small">{t('form.optionalDeposit')}</p></>:<><h3>{f.title}</h3><p className="preserve">{f.description}</p><div className="row"><span>{t('marketplace.budget')}</span><strong>{f.budget} USDC</strong></div><div className="row"><span>{t('marketplace.deadline')}</span><strong>{new Date(f.deadline).toLocaleString(locale)}</strong></div><div className="row"><span>{t('marketplace.verification')}</span><strong>{methodLabel(f.verificationMode,t)}</strong></div><div className="row"><span>{t('jobs.clientDeposit')}</span><strong>{f.clientDeposit} USDC</strong></div><div className="row"><span>{t('jobs.workerDeposit')}</span><strong>{t('form.notRequired')}</strong></div><h3 className="review-heading">{t('jobs.milestones')}</h3>{milestones.map((m,i)=><div className="row" key={i}><span>{m.title}</span><strong>{m.amount} USDC</strong></div>)}<p className="notice">{t('jobs.matchingHelp')}</p>{!user&&<SignInCard/>}</>}
- <ErrorMessage error={error}/><div className="actions">{step>1&&<button className="secondary" type="button" disabled={busy} onClick={()=>{setStep(step-1);setIssues([]);setError(null);}}>{t('onboarding.back')}</button>}<button disabled={busy||step===5&&!user}>{busy?t('form.publishing'):t(step===5?'jobs.publish':'onboarding.continue')}</button></div></form>}</main>;
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useI18n, type MessageKey } from "../lib/i18n";
+import {
+  post,
+  useData,
+  useSession,
+  SignInCard,
+  ErrorMessage,
+  ApiError,
+  categoryLabel,
+  methodLabel,
+  type Job,
+  type Person,
+  type Milestone,
+} from "../lib/product";
+import { buildVerificationPolicy } from "../lib/verification";
+import { validateBrief, type BriefIssue } from "../lib/brief-validation";
+const categories = ["Development", "Design", "Research", "Data", "Content"];
+function localDate(d: Date) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+}
+export function JobWizardPage() {
+  const { t, locale } = useI18n();
+  const { user } = useSession();
+  const [invite, setInvite] = useState("");
+  useEffect(
+    () =>
+      setInvite(
+        new URLSearchParams(window.location.search).get("invite") ?? "",
+      ),
+    [],
+  );
+  const inviteProfile = useData<Person>(
+    `invite-${invite}`,
+    `/users/${invite}`,
+    !!invite,
+  );
+  const [step, setStep] = useState(1),
+    [furthest, setFurthest] = useState(1),
+    [issues, setIssues] = useState<BriefIssue[]>([]),
+    [error, setError] = useState<unknown>(),
+    [busy, setBusy] = useState(false),
+    [published, setPublished] = useState<Job>(),
+    [createdId, setCreatedId] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const [f, setF] = useState(() => ({
+    title: "",
+    description: "",
+    requirements: "",
+    category: "Development",
+    skills: "",
+    budget: "300",
+    deadline: localDate(new Date(Date.now() + 14 * 86400_000)),
+    verificationMode: "Hybrid",
+    clientDeposit: "15",
+    url: "",
+    text: "",
+    selector: "",
+    performance: "80",
+    semantic: "",
+    minScore: "80",
+  }));
+  const [milestones, setMilestones] = useState<Milestone[]>(() => [
+    { title: t("form.defaultMilestone"), amount: "300", dueAt: f.deadline },
+  ]);
+  const [advanced, setAdvanced] = useState(false);
+  useEffect(() => {
+    if (issues.length)
+      requestAnimationFrame(() =>
+        formRef.current
+          ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+          ?.focus(),
+      );
+  }, [issues]);
+  const problem = (field: string) => issues.find((i) => i.field === field);
+  const issueText = (i: BriefIssue) => t(`form.${i.code}` as MessageKey);
+  const clear = (field: string) => {
+    setIssues((v) => v.filter((i) => i.field !== field));
+    setError(null);
+    setCreatedId("");
+  };
+  const change = (key: keyof typeof f, value: string) => {
+    clear(key);
+    setF((v) => ({
+      ...v,
+      [key]: value,
+      ...(key === "budget"
+        ? {
+            clientDeposit: String(Math.round(Number(value) * 0.05 * 1e6) / 1e6),
+          }
+        : {}),
+    }));
+    if (key === "budget" && milestones.length === 1)
+      setMilestones((v) => [{ ...v[0], amount: value }]);
+    if (key === "deadline")
+      setMilestones((v) =>
+        v.map((m) => (m.dueAt === f.deadline ? { ...m, dueAt: value } : m)),
+      );
+  };
+  const feedback = (key: string) =>
+    problem(key) ? (
+      <span id={`error-${key}`} className="field-error">
+        {issueText(problem(key)!)}
+      </span>
+    ) : null;
+  const field = (key: keyof typeof f, label: MessageKey, type = "text") => (
+    <label className="wizard-field">
+      {t(label)}
+      {["description", "requirements", "semantic"].includes(key) ? (
+        <textarea
+          aria-label={t(label)}
+          value={f[key]}
+          aria-invalid={!!problem(key)}
+          aria-describedby={problem(key) ? `error-${key}` : undefined}
+          onChange={(e) => change(key, e.target.value)}
+        />
+      ) : (
+        <input
+          aria-label={t(label)}
+          type={type}
+          step={type === "number" ? "0.000001" : undefined}
+          min={type === "number" ? "0" : undefined}
+          value={f[key]}
+          aria-invalid={!!problem(key)}
+          aria-describedby={problem(key) ? `error-${key}` : undefined}
+          onChange={(e) => change(key, e.target.value)}
+        />
+      )}
+      <span className="field-hint">
+        {key === "title"
+          ? t("form.titleHint")
+          : key === "description"
+            ? t("form.descriptionHint")
+            : key === "deadline"
+              ? t("form.localTime")
+              : key === "url"
+                ? t("form.urlHint")
+                : ""}
+      </span>
+      {feedback(key)}
+    </label>
+  );
+  const policy = () =>
+    f.verificationMode === "ClientOnly"
+      ? null
+      : buildVerificationPolicy({
+          preset: "WEBSITE",
+          mode: f.verificationMode === "Hybrid" ? "HYBRID" : "AI_ONLY",
+          url: f.url,
+          requiredText: f.text,
+          selector: f.selector,
+          minPerformance: Number(f.performance),
+          semanticRequirement: f.semantic,
+          minScore: Number(f.minScore),
+        });
+  const validate = (only?: number) => {
+    const found = validateBrief(f, milestones, only);
+    if (found.length) {
+      setIssues(found);
+      setStep(found[0].step);
+      return false;
+    }
+    setIssues([]);
+    return true;
+  };
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!validate(step === 5 ? undefined : step)) return;
+    if (step < 5) {
+      setStep(step + 1);
+      setFurthest((v) => Math.max(v, step + 1));
+      return;
+    }
+    setBusy(true);
+    try {
+      let id = createdId;
+      if (!id) {
+        const created = await post<Job>("/jobs", {
+          title: f.title.trim(),
+          description: f.description.trim(),
+          requirements: f.requirements,
+          category: f.category,
+          skills: f.skills
+            .split(/[,，]/)
+            .map((v) => v.trim())
+            .filter(Boolean),
+          budget: f.budget,
+          deadline: new Date(f.deadline).toISOString(),
+          milestones: milestones.map((m) => ({
+            ...m,
+            title: m.title.trim(),
+            dueAt: new Date(m.dueAt).toISOString(),
+          })),
+          verificationMode: f.verificationMode,
+          policy: policy(),
+          clientDeposit: f.clientDeposit,
+          workerDeposit: "0",
+        });
+        id = created.id;
+        setCreatedId(id);
+      }
+      const live = await post<Job>(`/jobs/${id}/publish`);
+      setPublished(live);
+      if (inviteProfile.data)
+        try {
+          await post(`/jobs/${id}/invite`, {
+            handle: inviteProfile.data.handle,
+          });
+        } catch {
+          /* Publishing succeeded; invitation can be sent separately. */
+        }
+    } catch (e) {
+      if (e instanceof ApiError && e.issues.length) {
+        const mapped = e.issues.map((i) => ({
+          field: i.path.join("."),
+          code: i.message.startsWith("form.")
+            ? i.message.slice(5)
+            : i.path[0] === "title"
+              ? "titleLength"
+              : i.path[0] === "description"
+                ? "descriptionLength"
+                : i.path[0] === "budget"
+                  ? "positiveAmount"
+                  : i.path[0] === "clientDeposit"
+                    ? "nonnegativeAmount"
+                    : i.path[0] === "skills"
+                      ? "skillsLength"
+                      : i.path[0] === "policy"
+                        ? "policyMismatch"
+                        : "serverField",
+          step:
+            i.path[0] === "milestones" ||
+            i.path[0] === "budget" ||
+            i.path[0] === "deadline"
+              ? 2
+              : i.path[0] === "policy"
+                ? 3
+                : i.path[0] === "clientDeposit"
+                  ? 4
+                  : 1,
+        }));
+        setIssues(mapped);
+        setStep(mapped[0].step);
+      } else setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const names = ["One", "Two", "Three", "Four", "Five"];
+  return (
+    <main className="shell narrow">
+      <div className="page-title">
+        <h1>{t("marketplace.post")}</h1>
+        <p>{t("jobs.matchingHelp")}</p>
+      </div>
+      {inviteProfile.data && (
+        <p className="notice">
+          {t("jobs.inviting", { name: inviteProfile.data.displayName })}
+        </p>
+      )}
+      {!published && (
+        <ol className="wizard-navigation">
+          {names.map((name, i) => (
+            <li key={name}>
+              <button
+                type="button"
+                disabled={busy || i + 1 > furthest}
+                aria-current={step === i + 1 ? "step" : undefined}
+                onClick={() => {
+                  setStep(i + 1);
+                  setIssues([]);
+                  setError(null);
+                }}
+              >
+                <span>{i + 1}</span>
+                <small>{t(`jobs.step${name}` as MessageKey)}</small>
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
+      {published ? (
+        <section className="card">
+          <span className="pill">✓ {t("jobs.published")}</span>
+          <h2>{published.title}</h2>
+          <Link className="button" href={`/jobs/${published.id}`}>
+            {t("common.details")} ↗
+          </Link>
+        </section>
+      ) : (
+        <form
+          ref={formRef}
+          noValidate
+          className="card wizard"
+          onSubmit={submit}
+        >
+          <p className="small">{t("form.stepCount", { step })}</p>
+          <h2>{t(`jobs.step${names[step - 1]}` as MessageKey)}</h2>
+          {issues.length > 0 && (
+            <div className="validation-summary" role="alert">
+              <strong>{t("form.fixFields")}</strong>
+              <ul>
+                {issues.map((i) => (
+                  <li key={i.field}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep(i.step);
+                        requestAnimationFrame(() =>
+                          document
+                            .getElementById(`error-${i.field}`)
+                            ?.previousElementSibling?.scrollIntoView({
+                              block: "center",
+                            }),
+                        );
+                      }}
+                    >
+                      {issueText(i)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {step === 1 ? (
+            <>
+              {field("title", "jobs.title")}
+              {field("description", "jobs.description")}
+              <label>
+                {t("marketplace.category")}
+                <select
+                  value={f.category}
+                  onChange={(e) => change("category", e.target.value)}
+                >
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {categoryLabel(c, t)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {field("skills", "jobs.skills")}
+              {field("requirements", "jobs.requirements")}
+            </>
+          ) : step === 2 ? (
+            <>
+              {field("budget", "jobs.amount", "number")}
+              {field("deadline", "marketplace.deadline", "datetime-local")}
+              <h3>{t("jobs.milestones")}</h3>
+              <p className="small">
+                {t("form.totalHint", {
+                  total: milestones.reduce(
+                    (v, m) => v + (Number(m.amount) || 0),
+                    0,
+                  ),
+                  budget: f.budget,
+                })}
+              </p>
+              {feedback("milestones")}
+              {milestones.map((m, i) => (
+                <div className="milestone-editor" key={i}>
+                  {(["title", "amount", "dueAt"] as const).map((key) => (
+                    <label key={key}>
+                      {t(
+                        key === "title"
+                          ? "jobs.title"
+                          : key === "amount"
+                            ? "jobs.amount"
+                            : "marketplace.deadline",
+                      )}
+                      <input
+                        type={
+                          key === "amount"
+                            ? "number"
+                            : key === "dueAt"
+                              ? "datetime-local"
+                              : "text"
+                        }
+                        step={key === "amount" ? "0.000001" : undefined}
+                        value={m[key]}
+                        aria-invalid={!!problem(`milestones.${i}.${key}`)}
+                        aria-describedby={
+                          problem(`milestones.${i}.${key}`)
+                            ? `error-milestones.${i}.${key}`
+                            : undefined
+                        }
+                        onChange={(e) => {
+                          clear(`milestones.${i}.${key}`);
+                          clear("milestones");
+                          setMilestones((v) =>
+                            v.map((x, j) =>
+                              j === i ? { ...x, [key]: e.target.value } : x,
+                            ),
+                          );
+                        }}
+                      />
+                      {feedback(`milestones.${i}.${key}`)}
+                    </label>
+                  ))}
+                  {milestones.length > 1 && (
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => {
+                        setMilestones((v) => v.filter((_, j) => j !== i));
+                        setIssues([]);
+                      }}
+                    >
+                      {t("jobs.remove")}
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                className="secondary"
+                disabled={milestones.length >= 32}
+                onClick={() =>
+                  setMilestones((v) => [
+                    ...v,
+                    { title: "", amount: "0", dueAt: f.deadline },
+                  ])
+                }
+              >
+                {t("jobs.addMilestone")}
+              </button>
+            </>
+          ) : step === 3 ? (
+            <>
+              <div className="choice-grid">
+                {["ClientOnly", "AIOnly", "Hybrid"].map((m) => (
+                  <button
+                    type="button"
+                    key={m}
+                    aria-pressed={f.verificationMode === m}
+                    className={
+                      f.verificationMode === m ? "choice selected" : "choice"
+                    }
+                    onClick={() => change("verificationMode", m)}
+                  >
+                    {methodLabel(m, t)}
+                    {m === "Hybrid" && <small>{t("jobs.recommended")}</small>}
+                  </button>
+                ))}
+              </div>
+              <p className="small">
+                {t(
+                  f.verificationMode === "ClientOnly"
+                    ? "form.clientMode"
+                    : f.verificationMode === "Hybrid"
+                      ? "form.hybridMode"
+                      : "form.aiMode",
+                )}
+              </p>
+              {f.verificationMode !== "ClientOnly" && (
+                <div className="verification-builder">
+                  <p>✓ {t("jobs.reachable")}</p>
+                  {field("url", "jobs.expectedUrl", "url")}
+                  {field("text", "jobs.requiredText")}
+                  <label>
+                    {t("jobs.element")}
+                    <select
+                      value={f.selector}
+                      onChange={(e) => change("selector", e.target.value)}
+                    >
+                      {[
+                        ["", "jobs.noElement"],
+                        [
+                          "[data-testid='connect-wallet']",
+                          "jobs.walletElement",
+                        ],
+                        ["h1", "jobs.headingElement"],
+                        ["nav", "jobs.navigationElement"],
+                        ["form", "jobs.formElement"],
+                      ].map(([value, key]) => (
+                        <option key={value} value={value}>
+                          {t(key as MessageKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {field("performance", "jobs.performance", "number")}
+                  {field("semantic", "jobs.semantic")}
+                  {field("minScore", "verification.minScore", "number")}
+                  <button
+                    type="button"
+                    className="secondary"
+                    aria-expanded={advanced}
+                    onClick={() => setAdvanced(!advanced)}
+                  >
+                    {t("jobs.advanced")}
+                  </button>
+                  {advanced && (
+                    <>
+                      {field("selector", "verification.requiredSelector")}
+                      <pre>
+                        {(() => {
+                          try {
+                            return JSON.stringify(policy(), null, 2);
+                          } catch {
+                            return t("errors.INVALID_POLICY");
+                          }
+                        })()}
+                      </pre>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          ) : step === 4 ? (
+            <>
+              <div className="payment-explanation">
+                <strong>{t("form.noWorkerDeposit")}</strong>
+                <p>{t("form.protectionHelp")}</p>
+              </div>
+              {field("clientDeposit", "jobs.clientDeposit", "number")}
+              <p className="small">{t("form.optionalDeposit")}</p>
+            </>
+          ) : (
+            <>
+              <h3>{f.title}</h3>
+              <p className="preserve">{f.description}</p>
+              <div className="row">
+                <span>{t("marketplace.budget")}</span>
+                <strong>{f.budget} USDC</strong>
+              </div>
+              <div className="row">
+                <span>{t("marketplace.deadline")}</span>
+                <strong>{new Date(f.deadline).toLocaleString(locale)}</strong>
+              </div>
+              <div className="row">
+                <span>{t("marketplace.verification")}</span>
+                <strong>{methodLabel(f.verificationMode, t)}</strong>
+              </div>
+              <div className="row">
+                <span>{t("jobs.clientDeposit")}</span>
+                <strong>{f.clientDeposit} USDC</strong>
+              </div>
+              <div className="row">
+                <span>{t("jobs.workerDeposit")}</span>
+                <strong>{t("form.notRequired")}</strong>
+              </div>
+              <h3 className="review-heading">{t("jobs.milestones")}</h3>
+              {milestones.map((m, i) => (
+                <div className="row" key={i}>
+                  <span>{m.title}</span>
+                  <strong>{m.amount} USDC</strong>
+                </div>
+              ))}
+              <p className="notice">{t("jobs.matchingHelp")}</p>
+              {!user && <SignInCard />}
+            </>
+          )}
+          <ErrorMessage error={error} />
+          <div className="actions">
+            {step > 1 && (
+              <button
+                className="secondary"
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setStep(step - 1);
+                  setIssues([]);
+                  setError(null);
+                }}
+              >
+                {t("onboarding.back")}
+              </button>
+            )}
+            <button disabled={busy || (step === 5 && !user)}>
+              {busy
+                ? t("form.publishing")
+                : t(step === 5 ? "jobs.publish" : "onboarding.continue")}
+            </button>
+          </div>
+        </form>
+      )}
+    </main>
+  );
 }

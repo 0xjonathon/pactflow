@@ -1,7 +1,85 @@
 "use client";
-import {useEffect,useRef,useState} from "react";
-import {useI18n} from "../lib/i18n";
-export function LanguageMenu(){const {locale,setLocale,t}=useI18n();const [open,setOpen]=useState(false);const ref=useRef<HTMLDivElement>(null);
- useEffect(()=>{if(!open)return;const close=(e:PointerEvent)=>{if(!ref.current?.contains(e.target as Node))setOpen(false);};const escape=(e:KeyboardEvent)=>{if(e.key==="Escape"){setOpen(false);ref.current?.querySelector('button')?.focus();}};document.addEventListener('pointerdown',close);document.addEventListener('keydown',escape);return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',escape);};},[open]);
- return <div ref={ref} className="language-menu"><button type="button" className="language-trigger" aria-label={t("form.language")} aria-expanded={open} aria-controls="language-options" onClick={()=>setOpen(!open)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6.5h14M5 17.5h14"/></svg><span className="sr-only">{locale==='en'?'English':'简体中文'}</span></button>{open&&<div id="language-options" className="language-options" role="group" aria-label={t("form.language")}><span>{t("form.language")}</span>{([['en','English'],['zh-CN','简体中文']] as const).map(([value,label])=><button type="button" key={value} aria-pressed={locale===value} onClick={()=>{setLocale(value);setOpen(false);ref.current?.querySelector('button')?.focus();}}>{label}<span aria-hidden="true">{locale===value?'✓':''}</span></button>)}</div>}</div>;
+import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../lib/i18n";
+export function LanguageMenu() {
+  const { locale, setLocale, t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        ref.current?.querySelector("button")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+  return (
+    <div ref={ref} className="language-menu">
+      <button
+        type="button"
+        className="language-trigger"
+        aria-label={t("form.language")}
+        aria-expanded={open}
+        aria-controls="language-options"
+        onClick={() => setOpen(!open)}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <ellipse cx="12" cy="12" rx="4" ry="9" />
+          <path d="M3 12h18M5 6.5h14M5 17.5h14" />
+        </svg>
+        <span className="sr-only">
+          {locale === "en" ? "English" : "简体中文"}
+        </span>
+      </button>
+      {open && (
+        <div
+          id="language-options"
+          className="language-options"
+          role="group"
+          aria-label={t("form.language")}
+        >
+          <span>{t("form.language")}</span>
+          {(
+            [
+              ["en", "English"],
+              ["zh-CN", "简体中文"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              type="button"
+              key={value}
+              aria-pressed={locale === value}
+              onClick={() => {
+                setLocale(value);
+                setOpen(false);
+                ref.current?.querySelector("button")?.focus();
+              }}
+            >
+              {label}
+              <span aria-hidden="true">{locale === value ? "✓" : ""}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

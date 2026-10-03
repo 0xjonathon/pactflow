@@ -8,20 +8,21 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@pactflow/chain": "workspace:*",
+    "@pactflow/sdk": "workspace:*",
+    "@pactflow/shared": "workspace:*",
+    "@pactflow/verifier": "workspace:*",
+    "@tanstack/react-query": "^5.0.0",
     "next": "^15.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "@pactflow/shared": "workspace:*",
-    "@pactflow/chain": "workspace:*",
-    "@pactflow/sdk": "workspace:*",
-    "@pactflow/verifier": "workspace:*",
-    "wagmi": "^3.7.7",
     "viem": "^2.40.0",
-    "@tanstack/react-query": "^5.0.0"
+    "wagmi": "^3.7.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.58.0",
     "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "@playwright/test": "^1.58.0"
+    "@types/react-dom": "^19.1.0"
   }
 }

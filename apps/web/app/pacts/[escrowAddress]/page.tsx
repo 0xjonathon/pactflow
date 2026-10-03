@@ -1,6 +1,9 @@
 import { PactDetail } from "./pact-detail";
 
-export default async function PactDetailPage({ params, searchParams }: {
+export default async function PactDetailPage({
+  params,
+  searchParams,
+}: {
   params: Promise<{ escrowAddress: string }>;
   searchParams: Promise<{ agreement?: string }>;
 }) {

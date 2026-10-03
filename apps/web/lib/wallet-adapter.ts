@@ -11,11 +11,19 @@ export function usePactWalletAdapter(): PactWalletAdapter | undefined {
   return useMemo(() => {
     if (!address || !chainId || !client?.account) return undefined;
     return {
-      address, chainId,
-      sendContractTransaction: request => client.sendTransaction({
-        account: client.account, chain: monadTestnet, to: request.address,
-        data: encodeFunctionData({ abi: request.abi, functionName: request.functionName, args: request.args }),
-      }),
+      address,
+      chainId,
+      sendContractTransaction: (request) =>
+        client.sendTransaction({
+          account: client.account,
+          chain: monadTestnet,
+          to: request.address,
+          data: encodeFunctionData({
+            abi: request.abi,
+            functionName: request.functionName,
+            args: request.args,
+          }),
+        }),
     };
   }, [address, chainId, client]);
 }
