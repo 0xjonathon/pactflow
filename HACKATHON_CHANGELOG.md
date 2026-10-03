@@ -1,0 +1,14 @@
+# Hackathon changelog
+
+| Date       | Change                                    | Commit              | Effect / deployment evidence                                                                                                                                                  |
+| ---------- | ----------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-04 | Independent current-work baseline         | `3b207c7`           | Original source/history retained; no secrets or runtime data copied                                                                                                           |
+| 2026-10-04 | Audit/domain/dependency documents         | `20bcb96`           | Source-of-truth requirements and real acceptance graph                                                                                                                        |
+| 2026-10-04 | V2 immutable revision protocol + SDK/ABIs | `bb775ba`           | Fresh factories/registries; current-submission/report-bound proofs; default two revisions; V1 preserved; local deployment only                                                |
+| 2026-10-04 | Data/privacy/verification engine          | `3473b6a`           | Append submissions/evidence, migration, role permissions, manual/automatic reports, private scanned objects, durable worker proofs and signed adapters                        |
+| 2026-10-04 | Envio/canonical read model/reputation     | `14ea805`           | Both protocol versions; pagination/reorg replacement; no synthetic trust score or duplicate settlement metrics                                                                |
+| 2026-10-04 | Product rebuild                           | `dadffa2`           | Five-step creation, Room/TrustPanel, Activity/Network/Passport/Receipt/Proof, bilingual errors/evidence, mobile and public OG/privacy                                         |
+| 2026-10-04 | CI/local/Linux runtime                    | `2501449`           | PostgreSQL/Redis/storage/scanner/Envio/TLS composition, separate worker/health and local production-build acceptance                                                          |
+| 2026-10-04 | Acceptance evidence                       | See final QA commit | 18 local tests pass + 2 external-service skips; Foundry 23 reported passes; eight browser tests pass; zero automated WCAG violations. Public V2/server/provider smoke blocked |
+
+No new public Monad deployment or transfers were performed. Existing V1 deployment receipts remain in `docs/TESTNET.md`. `.local` generated keys and valueless Anvil tokens are development-only. P1 remains behind P0 runtime acceptance.

@@ -1,0 +1,92 @@
+[
+  {
+    "path": "/",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/discover",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/network",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/activity",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/proof",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/onboarding",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/pacts/new",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/pacts/0x891ae177F64De30Ae8199f6BB192e0a8c0320BEB",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/p/8377a519-b271-4ae8-bbd0-fd3937dbc855",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/discover",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/network",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/activity",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/proof",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/onboarding",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/pacts/new",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/pacts/0x891ae177F64De30Ae8199f6BB192e0a8c0320BEB",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/p/8377a519-b271-4ae8-bbd0-fd3937dbc855",
+    "width": 390,
+    "violations": []
+  }
+]

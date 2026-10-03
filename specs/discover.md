@@ -1,5 +1,11 @@
-# discover
+# Discover
 
-Server search and filters: category, skills, budget, verification, funded-only, duration. Clearly label DEMO/ONCHAIN; show deliverables, funding and method. Never filter just current page.
+Public opportunities support server-side search/filtering/pagination and labelled DEMO versus actual funding state. Signed-in workers propose delivery; client selects a partner and reviews exact collaboration terms before wallet create/approval/funding.
 
-Acceptance: complete user flow, en/zh-CN, keyboard and mobile operation, empty/loading/failure states; tests recorded in qa/PRODUCTION_AUDIT.md. Full source requirements: product/MASTER_DIRECTIVE.md.
+Budget/skills/category/verification filters operate over database results rather than only the visible page. Selection is transactional; repeated/concurrent requests cannot select two workers. Fixed parties and bonds feed the V2 agreement. No brief publication claims funds are secured before its actual funding transaction.
+
+## Acceptance and boundaries
+
+Both-language marketplace browser flow covers publish/search/apply/select/fund/accept/manual revision/pay. Advanced ranking, direct invitation tokens and P1 filters remain gated.
+
+Required acceptance: actual user flow, English/Chinese, keyboard and mobile, empty/loading/failure states. Executed gates and evidence are recorded in `qa/PRODUCTION_AUDIT.md`; full source requirements are in `product/MASTER_DIRECTIVE.md`.

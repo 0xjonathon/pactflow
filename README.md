@@ -1,62 +1,43 @@
-# PactFlow
+# PactFlow 2.0
 
-PactFlow lets clients publish work, select a worker, protect funds, verify delivery, and settle on Monad Testnet. It includes the tested protocol, typed SDK, AI verifier, offchain marketplace, and indexed work history. Real deployment evidence is tracked in [docs/TESTNET.md](docs/TESTNET.md); pending items there are not claimed as complete.
+Agreement → Escrow → Evidence → Verification → Settlement → Reputation.
 
-## Local setup
+Independent rebuild on `codex/pactflow-2.0`, preserving the original Git history and working sources. V1 contracts and deployment records remain available; new revision-capable Pacts use separately configured V2 contracts. This project has passed local chain acceptance, but public deployment and production service acceptance remain blocked. See [production audit](qa/PRODUCTION_AUDIT.md).
 
-```sh
-pnpm install
-sh scripts/bootstrap-foundry.sh
-pnpm contracts:abi
-cd packages/contracts && forge test && cd ../..
-pnpm typecheck
-pnpm build
-```
+## Local acceptance
 
-Copy `.env.example` to `.env.local` and fill in wallet keys locally. The file is ignored by Git. Do not put keys in terminal arguments, documentation, or the browser. Use the existing deployment record and public configuration for the current testnet protocol; no redeployment is needed.
+Use Node 24, pnpm 11.25.0 and Monad Foundry. Install with `corepack pnpm install --frozen-lockfile`; run `sh scripts/bootstrap-foundry.sh` for the pinned contract test library.
 
-## Monad Testnet flow
-
-1. `pnpm preflight:testnet` checks three configured addresses, RPC chain ID, live USDC metadata, and MON/token balances. Use the [Monad faucet](https://faucet.monad.xyz) for test MON and the [Circle testnet faucet](https://faucet.circle.com/) for official Monad Testnet USDC.
-2. Set `DEPLOYER_PRIVATE_KEY`, `SETTLEMENT_TOKEN_ADDRESS`, and a valid RPC in `.env.local`. Run `pnpm deploy:testnet`. It broadcasts with Foundry, checks receipts and registry links, then writes `packages/chain/src/addresses/monad-testnet.json`, public web variables in `apps/web/.env.local`, and deployment evidence to `docs/TESTNET.md`.
-3. The deploy script sets `NEXT_PUBLIC_ARBITRATOR_ADDRESS` to the Deployer address. Check that this address differs from Client and Worker before creating a Pact.
-4. Set funded `CLIENT_PRIVATE_KEY` and `WORKER_PRIVATE_KEY` locally. Run `pnpm smoke:testnet` for an actual create, fund, accept, submit, approve, and settlement. It asserts balances, returned bonds, and reputation, then writes transaction evidence to `docs/TESTNET.md`.
-5. Start the product services below. Open the site in two browser profiles, publish a job, submit a proposal, select the worker, then confirm creation and funding.
-
-The default chain ID, RPC, and explorer come from [Monad Testnet network information](https://docs.monad.xyz/developer-essentials/testnet).
-
-## Validation
+Start Anvil in its own terminal:
 
 ```sh
-cd packages/contracts && forge fmt --check && forge test && cd ../..
-pnpm typecheck
-pnpm build
+anvil --host 127.0.0.1 --port 8547 --chain-id 10143 --block-time 1
 ```
 
-See [architecture](docs/ARCHITECTURE.md), [contract behavior](docs/CONTRACTS.md), and [PRD](docs/PRD.md). See [product architecture](docs/PRODUCT.md), [verification](docs/VERIFIER.md), and [pending usability study](docs/USABILITY.md).
-
-## Run the product locally
-
-Use Node.js and the pnpm version in `packageManager`. From the repository root:
+Then from this independent directory:
 
 ```sh
-pnpm db:migrate
-pnpm marketplace:seed
-pnpm --filter @pactflow/api dev
+corepack pnpm local:deploy
+corepack pnpm local:services
 ```
 
-In a second terminal:
+Open http://localhost:3011. The helper uses a new private local database and generated test wallets, deploys V2 only on loopback Anvil and mints valueless test tokens. Generated `.local` files contain private keys and must never be uploaded or reused publicly. Browser tests inject signing through their Node process; keys do not enter browser code.
+
+In another terminal:
 
 ```sh
-pnpm --filter @pactflow/web dev --port 3001
+corepack pnpm typecheck
+corepack pnpm lint
+corepack pnpm format:check
+corepack pnpm test
+corepack pnpm test:contracts
+corepack pnpm test:e2e:local
 ```
 
-Open http://localhost:3001. API_PORT=3002 and WEB_ORIGIN=http://localhost:3001 belong in the root `.env.local`; NEXT_PUBLIC_API_URL=http://127.0.0.1:3002 belongs in `apps/web/.env.local`. The API refreshes the local event index automatically. Do not run separate indexer or verifier smoke processes against the same PGlite directory while the API is running. External PostgreSQL supports multiple processes.
+Production build: stop local Next dev before `corepack pnpm build`. Real PostgreSQL/Redis integration tests run only with `TEST_DATABASE_URL` / `TEST_REDIS_URL` pointing at dedicated loopback test services; skipped tests are not passes. CI provisions both services and runs local-chain browser acceptance without public-chain broadcasting.
 
-```sh
-pnpm test:product
-pnpm --filter @pactflow/web test:e2e
-pnpm smoke:marketplace:testnet
-```
+## Production and protocol
 
-Real smoke commands use funded test wallets and perform real testnet transfers. Envio generated configuration and handlers are in `indexer`; its hosted runtime requires a valid ENVIO_API_TOKEN and runtime setup. RPC indexing remains available for local development.
+[Linux Compose setup](deploy/README.md) covers PostgreSQL, Redis, private objects/scanner, separate worker, Envio and TLS, backups and restore checks. Public V2 deployment is an explicit operator command (`deploy:v2:testnet`) using funded local credentials; it validates and records fresh contracts without replacing V1. Do not run it as a local or CI prerequisite.
+
+Read [product source of truth](product/PRODUCT.md), [dependency graph](product/P0_DEPENDENCIES.md), [state machine](specs/pact-state-machine.md), [API contract](specs/api-contracts.md), [acceptance matrix](qa/E2E_MATRIX.md) and [judge demonstration](qa/JUDGE_DEMO.md). Original V1 instructions are retained in [README-V1](docs/README-V1.md).

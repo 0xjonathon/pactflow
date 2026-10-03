@@ -26,3 +26,11 @@ Existing docs/TESTNET.md and packages/chain/src/addresses/monad-testnet.json con
 ## Baseline validation executed
 
 Original workspace: API/indexer 3/3; verifier 7/7 (loopback tests required sandbox permission); Foundry 12 behavior tests + 4 invariants; API/web/verifier/indexer typecheck; 483 locale keys per language. New-copy checks must be rerun after independent installation.
+
+## Rebuild follow-up
+
+The table above describes the preserved starting point, not the rebuilt branch. The V2 immutable configuration and revision protocol are in `bb775ba`; private submissions, sessions, uploads and signed verification are in `3473b6a`; canonical V1/V2 event projection and real reputation are in `14ea805`; product pages are in `dadffa2`; container/local acceptance are in `2501449`.
+
+Actual paths: `/pacts/new` → PactWizard → wallet adapter/SDK → V2 Factory; Room → authenticated trust routes → append-only Drizzle submissions → SDK submit → receipt confirmation; verification enqueue → atomic claim → normalization/checks/provider/aggregate/report → EIP-712 signer → V2 escrow; Envio handlers → paginated GraphQL ingestion → transactional persistent projector → reputation/Activity; both-party disclosure → public receipt/report projection → SSR metadata and OG image. V1 factory detection dispatches the preserved ABI and legacy detail.
+
+Initial single-submit/replay/privacy/unauthenticated enqueue issues are addressed by these implementations and local tests. PostgreSQL, Redis, objects/scanner, real Envio, provider credentials and publicly deployed V2 remain runtime acceptance gates; they are not established by code inspection or local PGlite. Current gate evidence is in `qa/PRODUCTION_AUDIT.md`.

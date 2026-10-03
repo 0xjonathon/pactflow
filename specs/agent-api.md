@@ -1,4 +1,6 @@
-# agent-api
+# Agent API — P1 gated design
+
+Not yet implemented; P0 must pass before enabling this surface.
 
 Scoped identity API and SDK create/accept/fund/submit/getVerification/getPact/getReputation. All asset movement requires genuine wallet authorization; no unrestricted release API.
 

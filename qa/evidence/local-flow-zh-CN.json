@@ -1,0 +1,74 @@
+{
+  "network": "LOCAL_TEST_ONLY",
+  "escrow": "0x5F93445833388bc22B1CAfD1174c470fCeDEC8A1",
+  "publicId": "c8c8382e-30f7-4477-9497-b413b7a2ec96",
+  "workerReceived": "1000000",
+  "history": [
+    {
+      "sequence": 2,
+      "txHash": "0x7a48414f3e3df9cd7de5d451eb708864f5512fa8de20c88d8944d5c2b311090d",
+      "manifestHash": "0x26e46c4b45ad9e5c5e2b5c08d124335568ff3460b9f7cdc70ba69a3e89f14fda"
+    },
+    {
+      "sequence": 1,
+      "txHash": "0xb9a97bdf025db502109af50d1f003b2ee30edf3d242b66dfa79c95d075c158da",
+      "manifestHash": "0xad4f13a795d2e660f1ba8f483aa734a25084e9cd31516166e4ca609cbeb65fb1"
+    }
+  ],
+  "events": [
+    {
+      "name": "Completed",
+      "txHash": "0x532679bb3234b3562030a81aff6171fc1bcd51782f26be90df277138f965c529",
+      "block": 12539,
+      "logIndex": 6
+    },
+    {
+      "name": "MilestoneSettled",
+      "txHash": "0x532679bb3234b3562030a81aff6171fc1bcd51782f26be90df277138f965c529",
+      "block": 12539,
+      "logIndex": 4
+    },
+    {
+      "name": "VerificationRecorded",
+      "txHash": "0x532679bb3234b3562030a81aff6171fc1bcd51782f26be90df277138f965c529",
+      "block": 12539,
+      "logIndex": 1
+    },
+    {
+      "name": "Submitted",
+      "txHash": "0x7a48414f3e3df9cd7de5d451eb708864f5512fa8de20c88d8944d5c2b311090d",
+      "block": 12534,
+      "logIndex": 0
+    },
+    {
+      "name": "RevisionRequested",
+      "txHash": "0xdfa75c4a9cecaf50d0e7b84a0e103de544816958443c21efbd163a4c36ad2dae",
+      "block": 12529,
+      "logIndex": 2
+    },
+    {
+      "name": "VerificationRecorded",
+      "txHash": "0xdfa75c4a9cecaf50d0e7b84a0e103de544816958443c21efbd163a4c36ad2dae",
+      "block": 12529,
+      "logIndex": 1
+    },
+    {
+      "name": "Submitted",
+      "txHash": "0xb9a97bdf025db502109af50d1f003b2ee30edf3d242b66dfa79c95d075c158da",
+      "block": 12524,
+      "logIndex": 0
+    },
+    {
+      "name": "Accepted",
+      "txHash": "0xc81fea946d850a2a2a6563c682b22ce713df55084cf71c2bfed1edfea709ec71",
+      "block": 12522,
+      "logIndex": 0
+    },
+    {
+      "name": "Funded",
+      "txHash": "0x7d7a877a17a5d0d84d0ed9d49f6be8859bde222765f4b8cd00be7b52293cf228",
+      "block": 12517,
+      "logIndex": 1
+    }
+  ]
+}
