@@ -30,6 +30,39 @@ contracts:
       - event: "FactorySet(address indexed factory)"
       - event: "MilestoneSettled(address indexed client, address indexed worker, uint256 workerAmount, bool disputed)"
       - event: "PactCompleted(address indexed client, address indexed worker)"
+  - name: PactFactoryV2
+    events:
+      - event: "FeeConfigChanged(address indexed treasury, uint16 feeBps)"
+      - event: "MilestoneConfigured(address indexed pact, uint256 indexed id, uint256 amount, uint64 dueAt, bytes32 rulesHash, uint8 mode, uint8 maxRevisions, address verifier)"
+      - event: "PactConfigured(address indexed pact, address token, address arbitrator, uint256 totalBudget, uint256 clientBond, uint256 workerBond, uint64 acceptanceDeadline, uint64 reviewPeriod, bytes32 agreementHash)"
+      - event: "PactCreated(address indexed pact, address indexed client, address indexed worker)"
+  - name: PactEscrowV2
+    events:
+      - event: "Accepted(address indexed worker, uint256 workerBond)"
+      - event: "BondSlashed(uint256 clientSlash, uint256 workerSlash)"
+      - event: "Cancelled()"
+      - event: "ClientApprovalRecorded(uint256 indexed id, uint256 indexed submissionId, bytes32 approvalHash)"
+      - event: "Completed()"
+      - event: "DisputeOpened(uint256 indexed id, address indexed opener)"
+      - event: "Funded(uint256 budget, uint256 clientBond)"
+      - event: "MilestoneExpired(uint256 indexed id)"
+      - event: "MilestoneSettled(uint256 indexed id, uint256 workerAward, uint256 clientRefund, uint256 fee)"
+      - event: "RevisionRequested(uint256 indexed id, uint256 indexed submissionId, bytes32 reportHash)"
+      - event: "Submitted(uint256 indexed id, uint256 indexed submissionId, bytes32 deliverableHash, string deliverableURI)"
+      - event: "VerificationRecorded(uint256 indexed id, uint256 indexed submissionId, bool approved, bytes32 reportHash, address verifier)"
+  - name: VerifierRegistryV2
+    events:
+      - event: "AttestationConsumed(bytes32 indexed digest, address indexed verifier, address indexed pact)"
+      - event: "EIP712DomainChanged()"
+      - event: "FactorySet(address indexed factory)"
+      - event: "VerifierRegistered(address indexed verifier, uint8 verifierType, bytes32 metadataHash, string metadataURI)"
+      - event: "VerifierRevoked(address indexed verifier)"
+  - name: ReputationRegistryV2
+    events:
+      - event: "BondSlashed(address indexed account, uint256 amount)"
+      - event: "FactorySet(address indexed factory)"
+      - event: "MilestoneSettled(address indexed client, address indexed worker, uint256 workerAmount, bool disputed)"
+      - event: "PactCompleted(address indexed client, address indexed worker)"
 chains:
   - id: 10143
     start_block: 66976195
@@ -42,3 +75,7 @@ chains:
         address: "0x9d8bf04dc4eab73de1df0ffc6f87ff66d4748835"
       - name: ReputationRegistry
         address: "0xd8faa6cd67161c67f69bd47909a1225c82e242a3"
+      - name: PactFactoryV2
+      - name: PactEscrowV2
+      - name: VerifierRegistryV2
+      - name: ReputationRegistryV2
