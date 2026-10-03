@@ -47,7 +47,6 @@ Protocol fee: 0%
 - Worker earned (gross raw units): 0 → 5000000
 - Client completed pacts: 0 → 1
 
-
 ## Browser wallet walkthrough
 
 Completed in Chrome with the original Client and Worker MetaMask wallets on 2026-09-30. The Pact page was refreshed between wallet switches and read its state from Monad Testnet.

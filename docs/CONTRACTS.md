@@ -12,12 +12,12 @@
 
 The client deposits `totalBudget + clientBond` before the acceptance deadline. The worker deposits `workerBond` when accepting. Milestone due times are strictly increasing and later than the acceptance deadline. A submission must occur no later than its due time. Client approval and AI attestation must occur no later than the submission's `reviewDeadline`.
 
-| Mode | Normal release condition | Timeout path |
-| --- | --- | --- |
-| `ClientOnly` | Client approval | Worker claims after review deadline |
-| `AIOnly` | Valid positive verifier attestation | None; verifier attestation is required |
-| `Hybrid` | Client approval and positive verifier attestation, in either order | Worker claims after review deadline only if AI attestation exists |
-| `Arbitrator` | Named arbitrator approval | None; arbitrator decision is required |
+| Mode         | Normal release condition                                           | Timeout path                                                      |
+| ------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| `ClientOnly` | Client approval                                                    | Worker claims after review deadline                               |
+| `AIOnly`     | Valid positive verifier attestation                                | None; verifier attestation is required                            |
+| `Hybrid`     | Client approval and positive verifier attestation, in either order | Worker claims after review deadline only if AI attestation exists |
+| `Arbitrator` | Named arbitrator approval                                          | None; arbitrator decision is required                             |
 
 The client or worker may open a dispute during the review window. The arbitrator chooses `workerAward` from zero to the milestone amount; the rest returns to the client. The arbitrator may slash either bond up to its remaining balance. Client bond slashes go to the worker; worker bond slashes go to the client. The protocol fee is charged on the gross worker award, including a partial award, and paid to the treasury. All remaining bonds return when every milestone is settled.
 
