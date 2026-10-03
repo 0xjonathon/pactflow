@@ -1,9 +1,27 @@
 import type { Abi, Address, Hex } from "viem";
 
-export type PactStatus = "Created" | "Funded" | "Active" | "Submitted" | "Disputed" | "Completed" | "Cancelled";
-export type MilestoneStatus = "Pending" | "Submitted" | "Disputed" | "Paid";
+export type PactStatus =
+  | "Created"
+  | "Funded"
+  | "Active"
+  | "Submitted"
+  | "Disputed"
+  | "Completed"
+  | "Cancelled"
+  | "RevisionRequired";
+export type MilestoneStatus =
+  | "Pending"
+  | "Submitted"
+  | "Disputed"
+  | "Paid"
+  | "RevisionRequired";
 
 export interface MilestoneView {
+  submissionId?: bigint;
+  maxRevisions?: number;
+  revisionRequired?: boolean;
+  verifier?: Address;
+  reportHash?: Hex;
   id: bigint;
   amount: bigint;
   dueAt: bigint;
@@ -19,6 +37,7 @@ export interface MilestoneView {
 }
 
 export interface PactView {
+  protocolVersion?: 1 | 2;
   pactId: Hex;
   escrowAddress: Address;
   client: Address;
@@ -30,6 +49,7 @@ export interface PactView {
   workerBond: bigint;
   fundedBudget: bigint;
   releasedBudget: bigint;
+  settledBudget?: bigint;
   agreementHash: Hex;
   status: PactStatus;
   milestones: MilestoneView[];
@@ -41,7 +61,12 @@ export interface PactView {
 export interface PactWalletAdapter {
   address: Address;
   chainId: number;
-  sendContractTransaction(request: { address: Address; abi: Abi; functionName: string; args?: readonly unknown[] }): Promise<Hex>;
+  sendContractTransaction(request: {
+    address: Address;
+    abi: Abi;
+    functionName: string;
+    args?: readonly unknown[];
+  }): Promise<Hex>;
 }
 
 export interface TransactionHooks {
@@ -51,6 +76,8 @@ export interface TransactionHooks {
 }
 
 export interface CreatePactInput {
+  agreementHash?: Hex;
+  protocolVersion?: 1 | 2;
   client: Address;
   worker: Address;
   token: Address;
@@ -60,7 +87,14 @@ export interface CreatePactInput {
   workerBond: bigint;
   acceptanceDeadline: bigint;
   reviewPeriod: bigint;
-  milestones: Array<{ amount: bigint; dueAt: bigint; rulesHash: Hex; mode: 0 | 1 | 2 | 3 }>;
+  milestones: Array<{
+    amount: bigint;
+    dueAt: bigint;
+    rulesHash: Hex;
+    mode: 0 | 1 | 2 | 3;
+    maxRevisions?: number;
+    verifier?: Address;
+  }>;
 }
 
 export interface ReputationFacts {

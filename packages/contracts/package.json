@@ -2,6 +2,10 @@
   "name": "@pactflow/contracts",
   "version": "0.1.0",
   "private": true,
-  "dependencies": { "@openzeppelin/contracts": "^5.4.0" },
-  "scripts": { "typecheck": "echo Solidity checked by forge test" }
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0"
+  },
+  "scripts": {
+    "typecheck": "echo Solidity checked by forge test"
+  }
 }
