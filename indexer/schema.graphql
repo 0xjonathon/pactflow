@@ -1,0 +1,12 @@
+type ProtocolEvent {
+  id: ID!
+  chainId: Int!
+  txHash: String!
+  logIndex: Int!
+  blockNumber: Int!
+  blockHash: String!
+  address: String!
+  name: String!
+  args: String!
+  timestamp: Int!
+}

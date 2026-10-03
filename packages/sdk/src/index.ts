@@ -119,6 +119,7 @@ export class PactFlowSdk {
     return raw.map((m, i) => ({
       id: BigInt(i), amount: m.amount, dueAt: m.dueAt, rulesHash: m.rulesHash,
       mode: modes[m.mode], deliverableHash: m.deliverableHash, deliverableURI: m.deliverableURI,
+      aiAttested: m.aiAttested, clientApproved: m.clientApproved,
       submittedAt: m.submitted ? m.reviewDeadline - reviewPeriod : undefined,
       reviewDeadline: m.submitted ? m.reviewDeadline : undefined,
       status: m.settled ? "Paid" : m.disputed ? "Disputed" : m.submitted ? "Submitted" : "Pending",

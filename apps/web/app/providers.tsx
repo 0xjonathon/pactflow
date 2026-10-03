@@ -1,9 +1,11 @@
 "use client";
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider, createConfig, http } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { WagmiProvider, createConfig, http, injected } from "wagmi";
 import { monadTestnet } from "@pactflow/chain";
+import { SessionProvider } from "../lib/product";
+import { SiteHeader } from "../components/SiteHeader";
+import { I18nProvider, type Locale } from "../lib/i18n";
 
 const config = createConfig({
   chains: [monadTestnet],
@@ -12,7 +14,7 @@ const config = createConfig({
   ssr: true,
 });
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, initialLocale }: { children: ReactNode; initialLocale: Locale }) {
   const [queryClient] = useState(() => new QueryClient());
-  return <WagmiProvider config={config}><QueryClientProvider client={queryClient}>{children}</QueryClientProvider></WagmiProvider>;
+  return <WagmiProvider config={config}><QueryClientProvider client={queryClient}><I18nProvider initialLocale={initialLocale}><SessionProvider><SiteHeader />{children}</SessionProvider></I18nProvider></QueryClientProvider></WagmiProvider>;
 }

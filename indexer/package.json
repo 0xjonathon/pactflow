@@ -1,1 +1,25 @@
-{ "name": "@pactflow/indexer", "private": true, "type": "module", "scripts": { "typecheck": "tsc --noEmit" }, "dependencies": { "@pactflow/chain": "workspace:*", "@pactflow/db": "workspace:*" } }
+{
+  "name": "@pactflow/indexer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "sync": "node --import tsx src/run.ts",
+    "config": "node --import tsx src/generate-config.ts",
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "test": "node --import tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@pactflow/chain": "workspace:*",
+    "@pactflow/db": "workspace:*",
+    "@pactflow/sdk": "workspace:*",
+    "viem": "^2.40.0",
+    "drizzle-orm": "^0.44.0",
+    "dotenv": "^17.0.0",
+    "envio": "^3.0.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

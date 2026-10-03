@@ -4,7 +4,8 @@
   "type": "module",
   "packageManager": "pnpm@11.25.0",
   "scripts": {
-    "typecheck": "tsc -p scripts/tsconfig.json --noEmit && turbo run typecheck",
+    "typecheck": "pnpm i18n:check && tsc -p scripts/tsconfig.json --noEmit && turbo run typecheck",
+    "i18n:check": "node --import tsx scripts/check-i18n.ts",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "contracts:abi": "node --import tsx scripts/generate-abis.ts",
@@ -12,7 +13,15 @@
     "preflight:testnet": "node --import tsx scripts/preflight-testnet.ts",
     "deploy:record": "node --import tsx scripts/record-deployment.ts",
     "wallets:check": "node --import tsx scripts/check-wallets.ts",
-    "smoke:testnet": "node --import tsx scripts/testnet-smoke.ts"
+    "smoke:testnet": "node --import tsx scripts/testnet-smoke.ts",
+    "verifier:register:testnet": "node --import tsx scripts/register-verifier-testnet.ts",
+    "db:migrate": "pnpm --filter @pactflow/db db:migrate",
+    "smoke:verifier:testnet": "pnpm --filter @pactflow/verifier smoke:testnet",
+    "verifier:sync:testnet": "pnpm --filter @pactflow/verifier sync:testnet",
+    "indexer:sync": "pnpm --filter @pactflow/indexer sync",
+    "marketplace:seed": "pnpm --filter @pactflow/api seed",
+    "test:product": "pnpm --filter @pactflow/api test && pnpm --filter @pactflow/indexer test",
+    "smoke:marketplace:testnet": "node --import tsx scripts/marketplace-smoke.ts"
   },
   "devDependencies": {
     "turbo": "^2.5.0",

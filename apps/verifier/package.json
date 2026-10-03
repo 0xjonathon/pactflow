@@ -1,6 +1,30 @@
 {
   "name": "@pactflow/verifier",
   "private": true,
-  "scripts": { "typecheck": "tsc --noEmit" },
-  "dependencies": { "@pactflow/chain": "workspace:*", "viem": "^2.37.0" }
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./policy": "./src/policy.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/**/*.test.ts",
+    "smoke:testnet": "node --import tsx src/smoke-testnet.ts",
+    "sync:testnet": "node --import tsx src/sync-verifier.ts"
+  },
+  "dependencies": {
+    "@pactflow/chain": "workspace:*",
+    "@pactflow/db": "workspace:*",
+    "@pactflow/sdk": "workspace:*",
+    "ajv": "^8.20.0",
+    "bullmq": "^6.3.10",
+    "cheerio": "^1.2.0",
+    "chrome-launcher": "^1.2.1",
+    "drizzle-orm": "^0.44.0",
+    "dotenv": "^17.0.0",
+    "ipaddr.js": "^2.5.0",
+    "lighthouse": "^13.5.0",
+    "viem": "^2.37.0",
+    "zod": "^4.6.5"
+  }
 }

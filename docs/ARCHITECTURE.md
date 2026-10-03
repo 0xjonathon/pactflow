@@ -1,6 +1,6 @@
-# PactFlow architecture — Phase 1 protocol, Phase 2 Testnet integration
+# PactFlow architecture — protocol, verification, and product
 
-The protocol is the source of truth for pact creation, collateral, milestone settlement, and verifier attestations. Phase 2 adds a real viem SDK, chain configuration, and wallet connected web flow. API, verifier service, database, and indexer remain skeletons.
+The protocol is the source of truth for pact creation, collateral, milestone settlement, and verifier attestations. Phase 2 adds a real viem SDK, chain configuration, and wallet connected web flow. Phase 3 adds bounded artifact verification and signed attestations. Phase 4 adds an offchain marketplace, signed profile sessions, proposals, notifications, event indexing, and reputation aggregation. See PRODUCT.md and VERIFIER.md for these services.
 
 ```text
 client ── createPact ──> PactFactory ── EIP-1167 clone ──> PactEscrow
@@ -31,4 +31,4 @@ EIP-1167 clones use a fixed implementation `delegatecall` as part of the standar
 - The registry admin can pause callbacks, which also pauses settlements. This coupling keeps reputation facts atomic with payments, but requires operational monitoring.
 - Settlement tokens must transfer the exact requested amount into escrow. Fee-on-transfer tokens are rejected at deposit. Rebasing or otherwise externally mutable balances are unsupported.
 - There is no dispute resolution deadline in this version. A disputed milestone depends on its named arbitrator. This is a protocol risk to address before production deployment.
-- The contracts have not been audited. Deployment status and actual Monad transactions are tracked in `docs/TESTNET.md`. The direct Pact UI does not expose dispute or verifier actions; those remain later work.
+- The contracts have not been audited. Deployment status and actual Monad transactions are tracked in `docs/TESTNET.md`. The workspace exposes verification and client approval; dispute resolution remains dependent on the configured arbitrator.

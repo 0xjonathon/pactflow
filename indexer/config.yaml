@@ -1,0 +1,44 @@
+name: pactflow
+description: PactFlow objective cooperation history
+address_format: lowercase
+handlers: src/handlers.ts
+contracts:
+  - name: PactFactory
+    events:
+      - event: "FeeConfigChanged(address indexed treasury, uint16 feeBps)"
+      - event: "PactCreated(address indexed pact, address indexed client, address indexed worker)"
+  - name: PactEscrow
+    events:
+      - event: "Accepted(address indexed worker, uint256 workerBond)"
+      - event: "BondSlashed(uint256 clientSlash, uint256 workerSlash)"
+      - event: "Cancelled()"
+      - event: "Completed()"
+      - event: "DisputeOpened(uint256 indexed id, address indexed opener)"
+      - event: "Funded(uint256 budget, uint256 clientBond)"
+      - event: "MilestoneSettled(uint256 indexed id, uint256 workerAward, uint256 clientRefund, uint256 fee)"
+      - event: "Submitted(uint256 indexed id, bytes32 deliverableHash, string deliverableURI)"
+  - name: VerifierRegistry
+    events:
+      - event: "AttestationConsumed(bytes32 indexed digest, address indexed verifier, address indexed pact)"
+      - event: "EIP712DomainChanged()"
+      - event: "FactorySet(address indexed factory)"
+      - event: "VerifierRegistered(address indexed verifier, uint8 verifierType, bytes32 metadataHash, string metadataURI)"
+      - event: "VerifierRevoked(address indexed verifier)"
+  - name: ReputationRegistry
+    events:
+      - event: "BondSlashed(address indexed account, uint256 amount)"
+      - event: "FactorySet(address indexed factory)"
+      - event: "MilestoneSettled(address indexed client, address indexed worker, uint256 workerAmount, bool disputed)"
+      - event: "PactCompleted(address indexed client, address indexed worker)"
+chains:
+  - id: 10143
+    start_block: 66976195
+    rpc: ${MONAD_TESTNET_RPC_URL:-https://testnet-rpc.monad.xyz}
+    contracts:
+      - name: PactFactory
+        address: "0xb9d75193df4ab985e5c2a5a1b0e332946d405d1a"
+      - name: PactEscrow
+      - name: VerifierRegistry
+        address: "0x9d8bf04dc4eab73de1df0ffc6f87ff66d4748835"
+      - name: ReputationRegistry
+        address: "0xd8faa6cd67161c67f69bd47909a1225c82e242a3"

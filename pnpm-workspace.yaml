@@ -4,3 +4,4 @@ packages:
   - 'indexer'
 allowBuilds:
   esbuild: true
+  msgpackr-extract: false

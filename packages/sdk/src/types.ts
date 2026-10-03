@@ -11,6 +11,8 @@ export interface MilestoneView {
   mode: "ClientOnly" | "AIOnly" | "Hybrid" | "Arbitrator";
   deliverableHash: Hex;
   deliverableURI: string;
+  aiAttested: boolean;
+  clientApproved: boolean;
   submittedAt?: bigint;
   reviewDeadline?: bigint;
   status: MilestoneStatus;
