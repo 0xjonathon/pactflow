@@ -8,11 +8,17 @@ import * as schema from "./schema";
 
 export function connectDatabase(url: string) {
   if (url.startsWith("pglite:")) {
-    if (process.env.NODE_ENV === "production") throw new Error("PGlite is for local development only");
+    if (process.env.NODE_ENV === "production")
+      throw new Error("PGlite is for local development only");
     const directory = url.slice("pglite:".length);
     mkdirSync(dirname(directory), { recursive: true });
     const client = new PGlite(directory);
-    return { db: drizzlePglite(client, { schema }) as unknown as ReturnType<typeof drizzle<typeof schema>>, close: () => client.close() };
+    return {
+      db: drizzlePglite(client, { schema }) as unknown as ReturnType<
+        typeof drizzle<typeof schema>
+      >,
+      close: () => client.close(),
+    };
   }
   const sql = postgres(url, { max: 5 });
   const db = drizzle(sql, { schema });

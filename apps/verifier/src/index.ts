@@ -10,3 +10,6 @@ export * from "./pipeline/onchain";
 export * from "./pipeline/process-job";
 export * from "./storage/repository";
 export * from "./queue";
+export * from "./storage/object-store";
+
+export { adapterCapabilities } from "./adapters/authenticated";
