@@ -1,0 +1,13 @@
+{$DOMAIN} {
+  encode zstd gzip
+  header {
+    Strict-Transport-Security "max-age=31536000"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+  handle_path /api-proxy/* { reverse_proxy api:3001 }
+  handle { reverse_proxy web:3000 }
+}
+objects.{$DOMAIN} {
+  reverse_proxy objects:9000
+}

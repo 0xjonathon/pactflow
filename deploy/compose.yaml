@@ -1,0 +1,251 @@
+name: pactflow-v2
+x-runtime: &runtime
+  build: { context: .., dockerfile: deploy/Dockerfile, target: runtime }
+  env_file: .env
+  restart: unless-stopped
+  init: true
+  security_opt: [no-new-privileges:true]
+  networks: [private]
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: pactflow
+      POSTGRES_USER: pactflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      {
+        test: [CMD-SHELL, "pg_isready -U pactflow -d pactflow"],
+        interval: 5s,
+        timeout: 3s,
+        retries: 20,
+      }
+    restart: unless-stopped
+    networks: [private]
+  redis:
+    image: redis:7-alpine
+    command:
+      [
+        redis-server,
+        --appendonly,
+        "yes",
+        --requirepass,
+        "${REDIS_PASSWORD:?set REDIS_PASSWORD}",
+      ]
+    volumes: [redisdata:/data]
+    healthcheck:
+      {
+        test: [CMD-SHELL, 'redis-cli -a "$${REDIS_PASSWORD}" ping'],
+        interval: 5s,
+        timeout: 3s,
+        retries: 20,
+      }
+    environment: { REDIS_PASSWORD: "${REDIS_PASSWORD}" }
+    restart: unless-stopped
+    networks: [private]
+  objects:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data
+    environment:
+      {
+        MINIO_ROOT_USER: "${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID}",
+        MINIO_ROOT_PASSWORD: "${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY}",
+      }
+    volumes: [objects:/data]
+    restart: unless-stopped
+    networks: [private]
+  object-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on: [objects]
+    entrypoint: [/bin/sh, -c]
+    command:
+      [
+        'until mc alias set private http://objects:9000 "$${S3_ACCESS_KEY_ID}" "$${S3_SECRET_ACCESS_KEY}"; do sleep 2; done; mc mb --ignore-existing private/"$${S3_BUCKET}"; mc anonymous set none private/"$${S3_BUCKET}"',
+      ]
+    env_file: .env
+    networks: [private]
+  scanner:
+    image: clamav/clamav:1.4
+    volumes: [clamdata:/var/lib/clamav]
+    healthcheck:
+      {
+        test: [CMD, clamdscan, --ping, "5"],
+        interval: 30s,
+        timeout: 10s,
+        retries: 10,
+        start_period: 120s,
+      }
+    restart: unless-stopped
+    networks: [private]
+  migrate:
+    <<: *runtime
+    working_dir: /app/packages/db
+    command: [node, --import, tsx, src/migrate.ts]
+    restart: "no"
+    depends_on: { postgres: { condition: service_healthy } }
+  api:
+    <<: *runtime
+    environment: { VERIFIER_PRIVATE_KEY: "" }
+    depends_on:
+      {
+        migrate: { condition: service_completed_successfully },
+        redis: { condition: service_healthy },
+        object-init: { condition: service_completed_successfully },
+        scanner: { condition: service_healthy },
+      }
+    healthcheck:
+      {
+        test:
+          [
+            CMD,
+            node,
+            -e,
+            "fetch('http://localhost:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+          ],
+        interval: 15s,
+        timeout: 5s,
+        retries: 5,
+      }
+  worker:
+    <<: *runtime
+    build: { context: .., dockerfile: deploy/Dockerfile, target: worker }
+    depends_on:
+      {
+        migrate: { condition: service_completed_successfully },
+        redis: { condition: service_healthy },
+        scanner: { condition: service_healthy },
+      }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "const fs=require('fs');try{if(Date.now()-Number(fs.readFileSync('/tmp/pactflow-worker-health','utf8'))>45000)process.exit(1)}catch{process.exit(1)}",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+  web:
+    <<: *runtime
+    env_file: []
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: web-build
+      args:
+        NEXT_PUBLIC_API_URL: https://${DOMAIN:?set DOMAIN}/api-proxy
+        NEXT_PUBLIC_SITE_URL: https://${DOMAIN}
+        NEXT_PUBLIC_MONAD_RPC_URL: ${MONAD_TESTNET_RPC_URL}
+        NEXT_PUBLIC_PACT_FACTORY_V2_ADDRESS: ${NEXT_PUBLIC_PACT_FACTORY_V2_ADDRESS}
+        NEXT_PUBLIC_REPUTATION_REGISTRY_V2_ADDRESS: ${NEXT_PUBLIC_REPUTATION_REGISTRY_V2_ADDRESS}
+        NEXT_PUBLIC_VERIFIER_REGISTRY_V2_ADDRESS: ${NEXT_PUBLIC_VERIFIER_REGISTRY_V2_ADDRESS}
+        NEXT_PUBLIC_SETTLEMENT_TOKEN_ADDRESS: ${NEXT_PUBLIC_SETTLEMENT_TOKEN_ADDRESS}
+        NEXT_PUBLIC_ARBITRATOR_ADDRESS: ${NEXT_PUBLIC_ARBITRATOR_ADDRESS}
+        NEXT_PUBLIC_VERIFIER_ADDRESS: ${NEXT_PUBLIC_VERIFIER_ADDRESS}
+    environment: { INTERNAL_API_URL: "http://api:3001" }
+    depends_on: { api: { condition: service_healthy } }
+    healthcheck:
+      {
+        test:
+          [
+            CMD,
+            node,
+            -e,
+            "fetch('http://localhost:3000').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+          ],
+        interval: 15s,
+        timeout: 5s,
+        retries: 5,
+      }
+  envio-postgres:
+    image: postgres:17-bookworm
+    environment:
+      {
+        POSTGRES_DB: envio,
+        POSTGRES_USER: envio,
+        POSTGRES_PASSWORD: "${ENVIO_PG_PASSWORD:?set ENVIO_PG_PASSWORD}",
+      }
+    volumes: [enviopg:/var/lib/postgresql/data]
+    healthcheck:
+      {
+        test: [CMD-SHELL, "pg_isready -U envio -d envio"],
+        interval: 5s,
+        timeout: 3s,
+        retries: 20,
+      }
+    restart: unless-stopped
+    networks: [private]
+  graphql:
+    image: hasura/graphql-engine:v2.43.0
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://envio:${ENVIO_PG_PASSWORD}@envio-postgres:5432/envio
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET:?set HASURA_GRAPHQL_ADMIN_SECRET}
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "false"
+      HASURA_GRAPHQL_STRINGIFY_NUMERIC_TYPES: "true"
+    depends_on: { envio-postgres: { condition: service_healthy } }
+    healthcheck:
+      {
+        test: [CMD-SHELL, "timeout 2s bash -c ':> /dev/tcp/127.0.0.1/8080'"],
+        interval: 5s,
+        timeout: 3s,
+        retries: 30,
+      }
+    restart: unless-stopped
+    networks: [private]
+  envio:
+    <<: *runtime
+    build: { context: .., dockerfile: deploy/Dockerfile, target: envio }
+    environment:
+      ENVIO_PG_HOST: envio-postgres
+      ENVIO_PG_PORT: 5432
+      ENVIO_PG_USER: envio
+      ENVIO_PG_PASSWORD: ${ENVIO_PG_PASSWORD}
+      ENVIO_PG_DATABASE: envio
+      ENVIO_PG_PUBLIC_SCHEMA: envio
+      ENVIO_INDEXER_HOST: 0.0.0.0
+      ENVIO_INDEXER_PORT: 9898
+      HASURA_GRAPHQL_ENDPOINT: http://graphql:8080/v1/metadata
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+      HASURA_SERVICE_HOST: graphql
+      HASURA_SERVICE_PORT: 8080
+      TUI_OFF: "true"
+    depends_on: { graphql: { condition: service_healthy } }
+    healthcheck:
+      {
+        test:
+          [
+            CMD,
+            node,
+            -e,
+            "fetch('http://localhost:9898/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+          ],
+        interval: 15s,
+        timeout: 5s,
+        retries: 10,
+      }
+  ingress:
+    image: caddy:2-alpine
+    environment: { DOMAIN: "${DOMAIN}" }
+    volumes:
+      [
+        "./Caddyfile:/etc/caddy/Caddyfile:ro",
+        caddydata:/data,
+        caddyconfig:/config,
+      ]
+    ports: ["80:80", "443:443"]
+    depends_on: [web, api, objects]
+    restart: unless-stopped
+    networks: [private]
+networks:
+  private:
+volumes:
+  pgdata:
+  redisdata:
+  objects:
+  clamdata:
+  caddydata:
+  caddyconfig:
+  enviopg:

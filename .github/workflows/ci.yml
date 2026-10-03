@@ -1,0 +1,67 @@
+name: PactFlow V2 local acceptance
+on: [push, pull_request, workflow_dispatch]
+permissions: { contents: read }
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          {
+            POSTGRES_USER: ci,
+            POSTGRES_PASSWORD: ci,
+            POSTGRES_DB: pactflow_ci_test,
+          }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d pactflow_ci_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/pactflow_ci_test
+      TEST_REDIS_URL: redis://127.0.0.1:6379/15
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - uses: category-labs/foundry-toolchain@v1
+        with: { network: monad }
+      - name: Install pinned contract test library
+        run: |
+          git clone https://github.com/foundry-rs/forge-std.git packages/contracts/lib/forge-std
+          git -C packages/contracts/lib/forge-std checkout 6764d4a42fcdff8e9f6999ab94fb74c1752a0445
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm test
+      - run: forge fmt --root packages/contracts --check
+      - run: pnpm test:contracts
+      - run: pnpm --filter @pactflow/indexer codegen
+      - run: pnpm build
+      - run: pnpm --filter @pactflow/web exec playwright install --with-deps chromium
+      - name: Deploy isolated local contracts and start services
+        run: |
+          mkdir -p .local/e2e
+          anvil --host 127.0.0.1 --port 8547 --chain-id 10143 --block-time 1 > .local/e2e/anvil.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8547 -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' && break; sleep 1; done
+          pnpm local:deploy
+          pnpm local:services --production-web > .local/e2e/services.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:3012/health && curl -sf http://localhost:3011 > /dev/null && break; sleep 1; done
+      - run: pnpm test:e2e:local
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: local-acceptance-evidence
+          path: |
+            qa/evidence
+            apps/web/test-results
+          # Never upload ephemeral accounts, env.json or private DB.
+          retention-days: 7

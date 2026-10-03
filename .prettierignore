@@ -1,0 +1,16 @@
+node_modules
+.next
+.envio
+.local
+out
+cache
+packages/contracts/lib
+pnpm-lock.yaml
+packages/chain/src/abis
+packages/db/drizzle/meta
+product/MASTER_DIRECTIVE.md
+docs/screenshots
+qa/evidence
+apps/web/test-results
+
+AGENTS.md

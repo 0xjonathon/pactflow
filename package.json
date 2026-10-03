@@ -21,16 +21,31 @@
     "indexer:sync": "pnpm --filter @pactflow/indexer sync",
     "marketplace:seed": "pnpm --filter @pactflow/api seed",
     "test:product": "pnpm --filter @pactflow/api test && pnpm --filter @pactflow/indexer test",
-    "smoke:marketplace:testnet": "node --import tsx scripts/marketplace-smoke.ts"
+    "smoke:marketplace:testnet": "node --import tsx scripts/marketplace-smoke.ts",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "test": "node --import tsx --test apps/api/src/*.test.ts apps/verifier/src/**/*.test.ts indexer/src/*.test.ts",
+    "test:contracts": "forge test --root packages/contracts",
+    "test:e2e:local": "pnpm --filter @pactflow/web exec playwright test --config playwright.local.config.ts",
+    "local:deploy": "node --import tsx scripts/local-chain.ts",
+    "local:services": "node --import tsx scripts/local-services.ts",
+    "deploy:v2:testnet": "node --import tsx scripts/deploy-testnet-v2.ts",
+    "deploy:v2:record": "node --import tsx scripts/record-deployment-v2.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@pactflow/chain": "workspace:*",
+    "@pactflow/sdk": "workspace:*",
+    "@types/node": "^22.0.0",
+    "dotenv": "^17.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "3.8.1",
+    "tsx": "^4.20.0",
     "turbo": "^2.5.0",
     "typescript": "^5.9.0",
-    "@types/node": "^22.0.0",
-    "tsx": "^4.20.0",
-    "dotenv": "^17.0.0",
-    "viem": "^2.40.0",
-    "@pactflow/chain": "workspace:*",
-    "@pactflow/sdk": "workspace:*"
+    "typescript-eslint": "^8.71.0",
+    "viem": "^2.40.0"
   }
 }
