@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
@@ -117,6 +119,86 @@ test("authenticated marketplace, filtering and atomic proposal lifecycle", async
     const j = create.json();
     assert.equal(j.fundsLocked, false);
     assert.equal(j.workerDeposit, "0");
+    // Draft metadata is owner-only; stable create identities recover lost responses.
+    assert.equal(
+      (await app.inject({ url: `/api/v1/jobs/${j.id}`, headers: h(w) }))
+        .statusCode,
+      404,
+    );
+    assert.equal(
+      (await app.inject({ url: `/api/v1/jobs/${j.id}` })).statusCode,
+      401,
+    );
+    const requestId = randomUUID();
+    const draftPayload = {
+      ...payload,
+      requestId,
+      title: "设计",
+      description: "交付图标",
+    };
+    const draft1 = (
+      await app.inject({
+        method: "POST",
+        url: "/api/v1/jobs",
+        headers: h(c),
+        payload: draftPayload,
+      })
+    ).json();
+    const draft2 = (
+      await app.inject({
+        method: "POST",
+        url: "/api/v1/jobs",
+        headers: h(c),
+        payload: { ...draftPayload, title: "图标" },
+      })
+    ).json();
+    assert.equal(draft1.id, draft2.id);
+    assert.equal(draft2.title, "图标");
+    assert.equal(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/api/v1/jobs",
+          headers: h(w),
+          payload: draftPayload,
+        })
+      ).statusCode,
+      403,
+    );
+    assert.equal(
+      (await app.inject({ url: "/api/v1/me/work", headers: h(c) }))
+        .json()
+        .client.filter((item: { id: string }) => item.id === requestId).length,
+      1,
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/api/v1/jobs",
+          headers: h(c),
+          payload: {
+            ...payload,
+            milestones: [{ title: "Zero", amount: "0", dueAt: future }],
+          },
+        })
+      ).statusCode,
+      400,
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/api/v1/jobs",
+          headers: h(c),
+          payload: {
+            ...payload,
+            deadline: new Date(Date.now() + 366 * 86400000).toISOString(),
+          },
+        })
+      ).statusCode,
+      400,
+    );
     assert.equal(
       (
         await app.inject({
@@ -188,6 +270,19 @@ test("authenticated marketplace, filtering and atomic proposal lifecycle", async
         .length,
       1,
     );
+    const immutable = (
+      await app.inject({
+        method: "POST",
+        url: "/api/v1/jobs",
+        headers: h(c),
+        payload: {
+          ...payload,
+          requestId: j.id,
+          title: "Do not overwrite published terms",
+        },
+      })
+    ).json();
+    assert.equal(immutable.title, payload.title);
     const application = {
       message: "I will build the dashboard with reusable components.",
       estimatedDays: 3,
@@ -267,6 +362,33 @@ test("authenticated marketplace, filtering and atomic proposal lifecycle", async
         .length,
       2,
     );
+    assert.equal(
+      (await app.inject({ url: "/api/v1/jobs?status=OPEN" }))
+        .json()
+        .items.some((value: { id: string }) => value.id === j.id),
+      false,
+    );
+    assert.equal(
+      (await app.inject({ url: "/api/v1/jobs?status=MATCHED" }))
+        .json()
+        .items.some((value: { id: string }) => value.id === j.id),
+      true,
+    );
+    // Linking an escrow removes marketplace closure; only the agreement workflow may cancel it.
+    await db
+      .update(schema.jobs)
+      .set({ escrowAddress: client.address.toLowerCase() })
+      .where(eq(schema.jobs.id, j.id));
+    assert.equal(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/api/v1/jobs/${j.id}/close`,
+          headers: h(c),
+        })
+      ).statusCode,
+      409,
+    );
     // A separate pending proposal may be withdrawn without affecting a match.
     const second = (
       await app.inject({
@@ -293,11 +415,71 @@ test("authenticated marketplace, filtering and atomic proposal lifecycle", async
       (
         await app.inject({
           method: "POST",
+          url: `/api/v1/jobs/${second.id}/proposals`,
+          headers: h(w),
+          payload: application,
+        })
+      ).json().code,
+      "ALREADY_APPLIED",
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: "POST",
           url: `/api/v1/proposals/${pending.id}/withdraw`,
           headers: h(w),
         })
       ).json().status,
       "WITHDRAWN",
+    );
+    const reapplied = await app.inject({
+      method: "POST",
+      url: `/api/v1/jobs/${second.id}/proposals`,
+      headers: h(w),
+      payload: { ...application, message: "交付" },
+    });
+    assert.equal(reapplied.statusCode, 200);
+    assert.equal(reapplied.json().id, pending.id);
+    assert.equal(reapplied.json().status, "PENDING");
+    await db
+      .update(schema.jobs)
+      .set({
+        deadline: new Date(Date.now() - 1000),
+        milestones: [
+          {
+            title: "Expired",
+            amount: "10",
+            dueAt: new Date(Date.now() - 1000).toISOString(),
+          },
+        ],
+      })
+      .where(eq(schema.jobs.id, second.id));
+    assert.equal(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/api/v1/jobs/${second.id}/proposals`,
+          headers: h(o),
+          payload: application,
+        })
+      ).json().code,
+      "JOB_DEADLINE_PASSED",
+    );
+    assert.equal(
+      (
+        await app.inject({
+          method: "POST",
+          url: `/api/v1/proposals/${pending.id}/accept`,
+          headers: h(c),
+        })
+      ).json().code,
+      "JOB_DEADLINE_PASSED",
+    );
+    assert.equal(
+      (await app.inject({ url: "/api/v1/jobs?status=OPEN" }))
+        .json()
+        .items.some((value: { id: string }) => value.id === second.id),
+      false,
     );
   } finally {
     await app.close();

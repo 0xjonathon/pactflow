@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { isAddress, verifyMessage, parseUnits, type Address } from "viem";
@@ -33,14 +33,14 @@ const amount = z
   .regex(/^\d+(\.\d{1,6})?$/)
   .refine((v) => Number(v) >= 0 && Number(v) <= 1_000_000);
 const milestone = z.object({
-  title: z.string().min(1).max(160),
-  amount,
+  title: z.string().trim().min(1).max(160),
+  amount: amount.refine((value) => Number(value) > 0, "form.positiveAmount"),
   dueAt: z.iso.datetime(),
 });
 export const jobSchema = z
   .object({
-    title: z.string().min(5).max(160),
-    description: z.string().min(20).max(12000),
+    title: z.string().trim().min(1).max(160),
+    description: z.string().trim().min(1).max(12000),
     requirements: z.string().max(8000).default(""),
     category: z.enum(["Development", "Design", "Research", "Data", "Content"]),
     skills: z.array(z.string().min(1).max(40)).max(12),
@@ -53,6 +53,21 @@ export const jobSchema = z
     workerDeposit: z.literal("0").default("0"),
   })
   .superRefine((v, ctx) => {
+    const lastSupported = Date.now() + 365 * 86400000;
+    if (Date.parse(v.deadline) > lastSupported)
+      ctx.addIssue({
+        code: "custom",
+        path: ["deadline"],
+        message: "form.deadlineRange",
+      });
+    v.milestones.forEach((m, index) => {
+      if (Date.parse(m.dueAt) > lastSupported)
+        ctx.addIssue({
+          code: "custom",
+          path: ["milestones", index, "dueAt"],
+          message: "form.deadlineRange",
+        });
+    });
     if (
       v.milestones.every((m) => amount.safeParse(m.amount).success) &&
       amount.safeParse(v.budget).success &&
@@ -396,14 +411,40 @@ export async function registerProductRoutes(
   app.post("/api/v1/jobs", async (request) => {
     const a = await actor(request);
     const input = jobSchema.parse(request.body);
+    const { requestId } = z
+      .object({ requestId: z.uuid().optional() })
+      .parse(request.body);
     const [value] = await db
       .insert(s.jobs)
       .values({
+        id: requestId ?? randomUUID(),
         ...input,
         deadline: new Date(input.deadline),
         clientId: a.userId,
       })
+      .onConflictDoNothing()
       .returning();
+    if (!value) {
+      const existing = await job(requestId!);
+      if (existing.clientId !== a.userId) return fail(403, "JOB_NOT_EDITABLE");
+      // A stable request identity recovers lost responses without overwriting published terms.
+      if (existing.status === "DRAFT")
+        await db
+          .update(s.jobs)
+          .set({
+            ...input,
+            deadline: new Date(input.deadline),
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(s.jobs.id, existing.id),
+              eq(s.jobs.clientId, a.userId),
+              eq(s.jobs.status, "DRAFT"),
+            ),
+          );
+      return job(existing.id);
+    }
     await track(a.userId, "job_created", { jobId: value.id });
     return job(value.id);
   });
@@ -417,6 +458,7 @@ export async function registerProductRoutes(
         maxBudget: z.coerce.number().min(0).default(1000000),
         deadline: z.string().default(""),
         funding: z.string().default(""),
+        status: z.enum(["ALL", "OPEN", "MATCHED"]).default("ALL"),
         sort: z
           .enum(["newest", "budget-high", "budget-low", "deadline"])
           .default("newest"),
@@ -433,6 +475,10 @@ export async function registerProductRoutes(
     let enriched = await Promise.all(rows.map((v) => job(v.id)));
     enriched = enriched.filter(
       (v) =>
+        (q.status === "ALL" || v.status === q.status) &&
+        (q.status !== "OPEN" ||
+          (v.deadline > new Date() &&
+            Date.parse(v.milestones[0]?.dueAt ?? "") > Date.now())) &&
         (!q.deadline || v.deadline <= new Date(q.deadline)) &&
         (!q.funding || v.fundsLocked === (q.funding === "locked")),
     );
@@ -449,23 +495,39 @@ export async function registerProductRoutes(
       page: q.page,
     };
   });
-  app.get("/api/v1/jobs/:id", async (request) =>
-    job(z.object({ id: z.uuid() }).parse(request.params).id),
-  );
+  app.get("/api/v1/jobs/:id", async (request) => {
+    const value = await job(
+      z.object({ id: z.uuid() }).parse(request.params).id,
+    );
+    if (
+      value.status === "DRAFT" &&
+      value.clientId !== (await actor(request)).userId
+    )
+      return fail(404, "NOT_FOUND");
+    return value;
+  });
   app.patch("/api/v1/jobs/:id", async (request) => {
     const a = await actor(request);
     const value = await job((request.params as { id: string }).id);
     if (value.clientId !== a.userId || value.status !== "DRAFT")
       return fail(403, "JOB_NOT_EDITABLE");
     const input = jobSchema.parse(request.body);
-    await db
+    const changed = await db
       .update(s.jobs)
       .set({
         ...input,
         deadline: new Date(input.deadline),
         updatedAt: new Date(),
       })
-      .where(eq(s.jobs.id, value.id));
+      .where(
+        and(
+          eq(s.jobs.id, value.id),
+          eq(s.jobs.clientId, a.userId),
+          eq(s.jobs.status, "DRAFT"),
+        ),
+      )
+      .returning();
+    if (!changed.length) return fail(409, "JOB_NOT_EDITABLE");
     return job(value.id);
   });
   for (const [action, status] of [
@@ -482,10 +544,25 @@ export async function registerProductRoutes(
           : !["OPEN", "MATCHED"].includes(value.status))
       )
         return fail(409, "INVALID_JOB_STATE");
-      await db
+      if (action === "publish")
+        jobSchema.parse({ ...value, deadline: value.deadline.toISOString() });
+      const changed = await db
         .update(s.jobs)
         .set({ status, updatedAt: new Date() })
-        .where(eq(s.jobs.id, value.id));
+        .where(
+          and(
+            eq(s.jobs.id, value.id),
+            eq(s.jobs.clientId, a.userId),
+            action === "publish"
+              ? eq(s.jobs.status, "DRAFT")
+              : and(
+                  inArray(s.jobs.status, ["OPEN", "MATCHED"]),
+                  isNull(s.jobs.escrowAddress),
+                ),
+          ),
+        )
+        .returning();
+      if (!changed.length) return fail(409, "INVALID_JOB_STATE");
       if (action === "publish")
         await track(a.userId, "job_published", { jobId: value.id });
       return job(value.id);
@@ -494,11 +571,15 @@ export async function registerProductRoutes(
     const a = await actor(request);
     const value = await job((request.params as { id: string }).id);
     if (value.clientId === a.userId) return fail(403, "CANNOT_APPLY_OWN_JOB");
-    if (value.status !== "OPEN" || value.deadline < new Date())
-      return fail(409, "JOB_NOT_OPEN");
+    if (value.status !== "OPEN") return fail(409, "JOB_NOT_OPEN");
+    if (
+      value.deadline <= new Date() ||
+      Date.parse(value.milestones[0]?.dueAt ?? "") <= Date.now()
+    )
+      return fail(409, "JOB_DEADLINE_PASSED");
     const input = z
       .object({
-        message: z.string().min(20).max(5000),
+        message: z.string().trim().min(1).max(5000),
         estimatedDays: z.number().int().min(1).max(365),
         acceptBudget: z.literal(true),
         milestones: z.array(milestone).optional(),
@@ -525,7 +606,18 @@ export async function registerProductRoutes(
         workerId: a.userId,
         workerAddress: a.address,
       })
+      .onConflictDoUpdate({
+        target: [s.proposals.jobId, s.proposals.workerId],
+        set: {
+          ...input,
+          milestones: input.milestones ?? null,
+          status: "PENDING",
+          createdAt: new Date(),
+        },
+        setWhere: eq(s.proposals.status, "WITHDRAWN"),
+      })
       .returning();
+    if (!proposal) return fail(409, "ALREADY_APPLIED");
     await notify(
       value.clientId,
       "proposal_received",
@@ -584,6 +676,19 @@ export async function registerProductRoutes(
         .from(s.proposals)
         .where(eq(s.proposals.id, id));
       if (!proposal) return fail(404, "NOT_FOUND");
+      const [listing] = await tx
+        .select()
+        .from(s.jobs)
+        .where(eq(s.jobs.id, proposal.jobId));
+      if (!listing || listing.clientId !== a.userId)
+        return fail(403, "ONLY_CLIENT");
+      if (
+        Date.parse(
+          ((proposal.milestones ?? listing.milestones) as s.JobMilestone[])[0]
+            ?.dueAt ?? "",
+        ) <= Date.now()
+      )
+        return fail(409, "JOB_DEADLINE_PASSED");
       const changed = await tx
         .update(s.jobs)
         .set({
@@ -603,6 +708,12 @@ export async function registerProductRoutes(
         .returning();
       if (!changed.length || proposal.status !== "PENDING")
         return fail(409, "ALREADY_MATCHED");
+      const claimed = await tx
+        .update(s.proposals)
+        .set({ status: "ACCEPTED" })
+        .where(and(eq(s.proposals.id, id), eq(s.proposals.status, "PENDING")))
+        .returning();
+      if (!claimed.length) return fail(409, "ALREADY_MATCHED");
       await tx
         .update(s.proposals)
         .set({ status: "REJECTED" })
@@ -612,10 +723,6 @@ export async function registerProductRoutes(
             eq(s.proposals.status, "PENDING"),
           ),
         );
-      await tx
-        .update(s.proposals)
-        .set({ status: "ACCEPTED" })
-        .where(eq(s.proposals.id, id));
       return proposal;
     });
     await notify(
@@ -660,6 +767,7 @@ export async function registerProductRoutes(
           eq(s.proposals.status, "ACCEPTED"),
         ),
       );
+    if (!proposal) return fail(403, "NO_MATCHED_PROPOSAL");
     return {
       job: value,
       proposal: { ...proposal, worker: await profile(proposal.workerId) },
@@ -707,10 +815,22 @@ export async function registerProductRoutes(
       )
     )
       return fail(409, "PACT_DRAFT_MISMATCH");
-    await db
+    const linked = await db
       .update(s.jobs)
       .set({ escrowAddress: input.escrow })
-      .where(eq(s.jobs.id, value.id));
+      .where(
+        and(
+          eq(s.jobs.id, value.id),
+          eq(s.jobs.status, "MATCHED"),
+          isNull(s.jobs.escrowAddress),
+        ),
+      )
+      .returning();
+    if (!linked.length) {
+      const existing = await job(value.id);
+      if (existing.escrowAddress === input.escrow) return existing;
+      return fail(409, "INVALID_JOB_STATE");
+    }
     await track(a.userId, "pact_created", { escrow: input.escrow });
     return job(value.id);
   });
