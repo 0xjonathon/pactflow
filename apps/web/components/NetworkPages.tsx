@@ -351,10 +351,12 @@ export function HomePage() {
               <span aria-hidden="true">{paused ? "▶" : "Ⅱ"}</span>
             </button>
           </div>
-          <h3>{t("v2.sampleTitle")}</h3>
-          <strong className="large-amount">
-            500 <small>USDC</small>
-          </strong>
+          <div className="preview-summary">
+            <h3>{t("v2.sampleTitle")}</h3>
+            <strong className="large-amount">
+              500 <small>USDC</small>
+            </strong>
+          </div>
           <div className="row">
             <span>Alice · {t("v2.client")}</span>
             <span>Marco · {t("v2.builder")}</span>
@@ -434,25 +436,25 @@ export function HomePage() {
           {t("v2.proof")} ↗
         </Link>
       </section>
-      {(["reputation", "monad"] as const).map((key) => (
-        <section className="v2-section editorial home-scene" key={key}>
-          <h2>{t(`v2.${key}Title`)}</h2>
-          <div>
+      <section className="v2-section home-records home-scene">
+        {(["reputation", "monad"] as const).map((key) => (
+          <article key={key}>
+            <h2>{t(`v2.${key}Title`)}</h2>
             <p>{t(`v2.${key}Body`)}</p>
             <Link href={key === "reputation" ? "/reputation" : "/proof"}>
               {t(key === "reputation" ? "marketplace.reputation" : "v2.proof")}{" "}
               ↗
             </Link>
-          </div>
-        </section>
-      ))}
+          </article>
+        ))}
+      </section>
       <section className="v2-section final-cta home-scene">
-        <h2>
-          {t("v2.hero1")}
-          <br />
-          {t("v2.hero2")}
-        </h2>
-        <p>{t("v2.tagline")}</p>
+        <div>
+          <h2>
+            {t("v2.hero1")} {t("v2.hero2")}
+          </h2>
+          <p>{t("v2.tagline")}</p>
+        </div>
         <Link className="button" href="/jobs/new">
           {t("marketplace.post")}
         </Link>
