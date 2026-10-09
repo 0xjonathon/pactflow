@@ -11,9 +11,17 @@ import {
   useData,
   useSession,
   ErrorMessage,
+  ApiError,
   SignInCard,
   API,
 } from "../lib/product";
+import {
+  currentRoomView,
+  progressFingerprint,
+  pactRoomTabs as tabs,
+  type RoomView,
+  type PactRoomTab,
+} from "../lib/pact-room-navigation";
 import { protocolSdk } from "../lib/protocol";
 import { usePactWalletAdapter } from "../lib/wallet-adapter";
 import {
@@ -21,6 +29,7 @@ import {
   TransactionTimeline,
   readableError,
 } from "../features/transaction/useTransactionFlow";
+import { PactReviewPanel } from "./PactReviewPanel";
 import { TrustPanel } from "./TrustPanel";
 import { ActivityList, type ActivityEvent } from "./NetworkPages";
 type Milestone = {
@@ -102,13 +111,6 @@ type Spec = {
     }>;
   };
 };
-const tabs = [
-  "overview",
-  "milestones",
-  "evidence",
-  "verification",
-  "activity",
-] as const;
 export function PactRoom({ escrow }: { escrow: Address }) {
   const { t, locale } = useI18n();
   const { user } = useSession();
@@ -140,9 +142,8 @@ export function PactRoom({ escrow }: { escrow: Address }) {
     `events-${escrow}`,
     `/activity?escrow=${escrow}`,
   );
-  const [tab, setTab] = useState<(typeof tabs)[number]>("overview"),
-    [selected, setSelected] = useState(0),
-    [items, setItems] = useState([
+  const [room, setRoom] = useState<RoomView & { key: string }>();
+  const [items, setItems] = useState([
       { type: "JSON", source: "", label: "Evidence", metadata: { commit: "" } },
     ]),
     [reason, setReason] = useState(""),
@@ -193,6 +194,37 @@ export function PactRoom({ escrow }: { escrow: Address }) {
   }, [state.data?.indexedAt]);
   const client = pact?.client.toLowerCase() === address?.toLowerCase();
   const builder = pact?.worker?.toLowerCase() === address?.toLowerCase();
+  const navigationKey = `pactflow_room_${escrow.toLowerCase()}_${address?.toLowerCase() ?? "visitor"}`;
+  const fingerprint = pact ? progressFingerprint(pact) : "";
+  const defaultView = pact
+    ? currentRoomView(pact, address)
+    : { tab: "overview" as const, selected: 0, fingerprint: "" };
+  const view =
+    room?.key === navigationKey && room.fingerprint === fingerprint
+      ? room
+      : defaultView;
+  const { tab, selected } = view;
+  useEffect(() => {
+    if (!pact) return;
+    let saved: unknown;
+    try {
+      saved = JSON.parse(localStorage.getItem(navigationKey) ?? "null");
+    } catch {
+      /* Storage is optional. */
+    }
+    const next = currentRoomView(pact, address, saved);
+    setRoom({ ...next, key: navigationKey });
+    // Only business progress changes reset the user's chosen view, not polling.
+  }, [navigationKey, fingerprint]);
+  const navigate = (nextTab: PactRoomTab, nextSelected = selected) => {
+    const next = { fingerprint, tab: nextTab, selected: nextSelected };
+    setRoom({ ...next, key: navigationKey });
+    try {
+      localStorage.setItem(navigationKey, JSON.stringify(next));
+    } catch {
+      /* Private browsing can disable storage. */
+    }
+  };
   const m = pact?.milestones[selected];
   const refresh = async () => {
     await Promise.all([
@@ -457,7 +489,7 @@ export function PactRoom({ escrow }: { escrow: Address }) {
       </main>
     );
   return (
-    <main className="shell">
+    <main className="shell pact-room">
       <div className="eyebrow">Pact · V2 · {escrow.slice(0, 10)}</div>
       <h1>{spec.data?.spec.title ?? t("v2.agreement")}</h1>
       <span className={`pill ${pact.status === "Completed" ? "verified" : ""}`}>
@@ -498,14 +530,14 @@ export function PactRoom({ escrow }: { escrow: Address }) {
                             : undefined;
                   if (next === undefined) return;
                   event.preventDefault();
-                  setTab(tabs[next]);
+                  navigate(tabs[next]);
                   const buttons =
                     event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
                       '[role="tab"]',
                     );
                   buttons?.[next]?.focus();
                 }}
-                onClick={() => setTab(key)}
+                onClick={() => navigate(key)}
               >
                 {t(`v2.${key}`)}
               </button>
@@ -516,8 +548,15 @@ export function PactRoom({ escrow }: { escrow: Address }) {
               {t("v2.syncPending")}
             </p>
           )}
-          <ErrorMessage error={error} />
-          {!!error && <p role="alert">{t(readableError(error).code)}</p>}
+          {error instanceof ApiError ? (
+            <ErrorMessage error={error} />
+          ) : (
+            !!error && (
+              <p role="alert" className="notice error">
+                {t(readableError(error).code)}
+              </p>
+            )
+          )}
           {pendingConfirmation && user && (
             <button
               disabled={busy || flow.busy}
@@ -617,8 +656,7 @@ export function PactRoom({ escrow }: { escrow: Address }) {
                     <button
                       className="secondary"
                       onClick={() => {
-                        setSelected(i);
-                        setTab("evidence");
+                        navigate("evidence", i);
                       }}
                     >
                       {t("v2.evidence")} →
@@ -629,12 +667,12 @@ export function PactRoom({ escrow }: { escrow: Address }) {
             )}
             {(tab === "evidence" || tab === "verification") && (
               <>
-                <label>
+                <label className="pact-milestone-picker">
                   {t("v2.milestones")}
                   <select
                     aria-label={t("v2.milestones")}
                     value={selected}
-                    onChange={(e) => setSelected(Number(e.target.value))}
+                    onChange={(e) => navigate(tab, Number(e.target.value))}
                   >
                     {pact.milestones.map((m, i) => (
                       <option key={m.id} value={i}>
@@ -822,39 +860,20 @@ export function PactRoom({ escrow }: { escrow: Address }) {
                     </>
                   )}
                 {m?.status === "Submitted" && user && (
-                  <div className="actions">
-                    {m.mode !== "ClientOnly" && !m.aiAttested && (
-                      <button disabled={busy} onClick={verify}>
-                        {t("v2.startVerification")}
-                      </button>
-                    )}
-                    {client &&
+                  <PactReviewPanel
+                    automated={m.mode !== "ClientOnly" && !m.aiAttested}
+                    manual={
+                      client &&
                       !m.clientApproved &&
-                      (m.mode === "ClientOnly" || m.mode === "Hybrid") && (
-                        <>
-                          <button
-                            disabled={busy || flow.busy}
-                            onClick={approve}
-                          >
-                            {t("v2.approve")}
-                          </button>
-                          <label>
-                            {t("v2.reason")}
-                            <textarea
-                              value={reason}
-                              onChange={(e) => setReason(e.target.value)}
-                            />
-                          </label>
-                          <button
-                            className="secondary"
-                            disabled={busy || flow.busy || !reason.trim()}
-                            onClick={revise}
-                          >
-                            {t("v2.requestRevision")}
-                          </button>
-                        </>
-                      )}
-                  </div>
+                      (m.mode === "ClientOnly" || m.mode === "Hybrid")
+                    }
+                    busy={busy || flow.busy}
+                    reason={reason}
+                    onReason={setReason}
+                    onVerify={verify}
+                    onApprove={approve}
+                    onRevise={revise}
+                  />
                 )}
                 {m &&
                   ["Submitted", "RevisionRequired"].includes(m.status) &&
@@ -862,7 +881,7 @@ export function PactRoom({ escrow }: { escrow: Address }) {
                   m.reviewDeadline &&
                   Number(m.reviewDeadline) >= Date.now() / 1000 && (
                     <button
-                      className="secondary"
+                      className="secondary pact-dispute"
                       disabled={busy || flow.busy}
                       onClick={dispute}
                     >
@@ -945,13 +964,20 @@ export function PactRoom({ escrow }: { escrow: Address }) {
                         </p>
                       </div>
                     ))}
-                {tab === "evidence" && (
+                {(tab === "evidence" || tab === "verification") && (
                   <>
                     <h3>{t("v2.history")}</h3>
                     {submissions.data
                       ?.filter((s) => s.milestoneIndex === selected)
                       .map((s) => (
-                        <details className="submission-card" key={s.id}>
+                        <details
+                          className="submission-card"
+                          key={s.id}
+                          open={
+                            tab === "verification" &&
+                            String(s.sequence) === m?.submissionId
+                          }
+                        >
                           <summary>
                             {t("v2.sequence", { number: s.sequence })} ·{" "}
                             {s.status === "CONFIRMED"

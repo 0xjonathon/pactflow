@@ -18,6 +18,7 @@ import {
   ApiError,
   useData,
 } from "../lib/product";
+import { platformArbitrator } from "../lib/platform";
 import { protocolSdk } from "../lib/protocol";
 import { usePactWalletAdapter } from "../lib/wallet-adapter";
 import {
@@ -105,7 +106,7 @@ export function PactWizard() {
     [context, setContext] = useState(""),
     [skills, setSkills] = useState(""),
     [worker, setWorker] = useState(""),
-    [arb, setArb] = useState(process.env.NEXT_PUBLIC_ARBITRATOR_ADDRESS ?? ""),
+    [arb] = useState(platformArbitrator),
     [acceptBy, setAcceptBy] = useState(date(1)),
     [hours, setHours] = useState("24"),
     [revisions, setRevisions] = useState("2"),
@@ -809,11 +810,7 @@ export function PactWizard() {
                   <input
                     {...fieldProps("arbitrator")}
                     value={arb}
-                    onChange={(e) => {
-                      setArb(e.target.value);
-                      clearField("arbitrator");
-                    }}
-                    onBlur={() => setArb((value) => value.trim())}
+                    readOnly
                     className="mono"
                     autoCapitalize="none"
                     spellCheck={false}

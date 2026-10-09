@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Hex } from "viem";
+import { isRpcRateLimit } from "@pactflow/chain";
 import { getExplorerTxUrl } from "@pactflow/chain";
 import type { TransactionHooks } from "@pactflow/sdk";
 import { useI18n, type MessageKey } from "../../lib/i18n";
@@ -25,6 +26,8 @@ type Step = {
 export function readableError(error: unknown) {
   const details = error instanceof Error ? error.message : String(error);
   const text = details.toLowerCase();
+  if (isRpcRateLimit(error))
+    return { code: "errors.rpcLimited" as MessageKey, details };
   const exact: Record<string, MessageKey> = {
     INVALID_ADDRESSES: "errors.invalidAddresses",
     DISTINCT_ACTORS: "errors.distinctActors",

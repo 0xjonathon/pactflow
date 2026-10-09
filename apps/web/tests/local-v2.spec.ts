@@ -60,9 +60,12 @@ for (const [locale, width] of [
       await cp
         .getByLabel(m.v2.workerAddress, { exact: true })
         .fill(w.account.address);
-      await cp
-        .getByLabel(m.v2.arbitrator, { exact: true })
-        .fill(privateKeyToAccount(keys.arbitrator).address);
+      await expect(cp.getByLabel(m.v2.arbitrator, { exact: true })).toHaveValue(
+        privateKeyToAccount(keys.arbitrator).address,
+      );
+      await expect(
+        cp.getByLabel(m.v2.arbitrator, { exact: true }),
+      ).toHaveAttribute("readonly", "");
       await cp.getByRole("button", { name: m.v2.next, exact: true }).click();
       console.log("Pact review ready");
       if (locale === "en") {

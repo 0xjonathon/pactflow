@@ -3369,3 +3369,86 @@ main footer.small a.brand {
     display: none;
   }
 }
+
+/* Pact decisions are compact controls, separate from revision content. */
+.pact-room .actions {
+  align-items: center;
+}
+.pact-room button:not([role="tab"]) {
+  min-height: 42px;
+  align-self: start;
+  font-size: 14px;
+}
+.pact-milestone-picker {
+  max-width: 420px;
+  margin-bottom: 24px;
+}
+.pact-milestone-picker select {
+  margin-top: 8px;
+}
+.pact-review {
+  display: grid;
+  gap: 24px;
+}
+.pact-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.pact-review-actions button {
+  padding: 11px 18px;
+}
+.pact-revision-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.pact-revision-form label {
+  margin: 0;
+}
+.pact-revision-form textarea {
+  min-height: 96px;
+  max-width: 100%;
+}
+.pact-revision-form button {
+  justify-self: end;
+  padding: 10px 16px;
+}
+.pact-room button.pact-dispute {
+  margin-top: 22px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+.pact-room .submission-card {
+  overflow-wrap: anywhere;
+}
+.pact-room .submission-card summary {
+  cursor: pointer;
+}
+.pact-room .pact-tabs {
+  padding: 3px;
+  gap: 4px;
+}
+.pact-room .pact-tabs button {
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 7px 7px 0 0;
+}
+.pact-room .pact-tabs button[aria-selected="true"] {
+  background: rgba(139, 92, 246, 0.08);
+}
+@media (max-width: 600px) {
+  .pact-review {
+    gap: 20px;
+  }
+  .pact-room .card[role="tabpanel"] {
+    padding: 20px;
+  }
+  .pact-revision-form button {
+    justify-self: start;
+  }
+}

@@ -31,7 +31,11 @@ export function protocolConfig() {
   };
 }
 
+let sharedSdk: PactFlowSdk | undefined;
 export function protocolSdk() {
-  const { addresses, rpcUrl } = protocolConfig();
-  return new PactFlowSdk({ addresses, rpcUrl });
+  if (!sharedSdk) {
+    const { addresses, rpcUrl } = protocolConfig();
+    sharedSdk = new PactFlowSdk({ addresses, rpcUrl });
+  }
+  return sharedSdk;
 }

@@ -20,9 +20,9 @@ See [the product journey](docs/PRODUCT_JOURNEY.md), [hackathon submission copy](
 
 ## Current status
 
-[Public website preview](https://pactflow-lovat.vercel.app) is hosted on Vercel. It is explicitly marked as a browsing preview: collaboration services are not connected, so account verification, brief publication and the new agreement workflow are unavailable. This website alone does not satisfy the hackathon's working Monad product requirement. See [Vercel deployment](deploy/VERCEL.md).
+[PactFlow](https://pactflow-lovat.vercel.app) is hosted on Vercel and connected to the API on a separate Aliyun server. V2 contracts are deployed on Monad Testnet; a real manual-acceptance workflow has settled test USDC. AI semantic review and Google sign-in require their respective service credentials. See [Vercel deployment](deploy/VERCEL.md).
 
-V1 contracts and deployment records remain available; new revision-capable Pacts use separately configured V2 contracts. These identifiers describe contract compatibility, not the product name. This project has passed local chain acceptance, but public deployment and production service acceptance remain blocked. See [production audit](qa/PRODUCTION_AUDIT.md).
+V1 contracts and deployment records remain available; new revision-capable Pacts use separately configured V2 contracts. These identifiers describe contract compatibility, not the product name. Local chain acceptance and a public testnet settlement have been verified. Broader production acceptance remains subject to the configured services and recorded checks. See [production audit](qa/PRODUCTION_AUDIT.md).
 
 [Download the transparent PactFlow logo](assets/brand/pactflow-logo.png) for the hackathon submission (1254 × 1254 PNG, under 2 MB).
 
@@ -59,6 +59,8 @@ corepack pnpm test:e2e:local
 Production build: stop local Next dev before `corepack pnpm build`. Real PostgreSQL/Redis integration tests run only with `TEST_DATABASE_URL` / `TEST_REDIS_URL` pointing at dedicated loopback test services; skipped tests are not passes. CI provisions both services and runs local-chain browser acceptance without public-chain broadcasting.
 
 ## Production and protocol
+
+New agreements use the configured platform dispute resolution wallet (`NEXT_PUBLIC_ARBITRATOR_ADDRESS`, default `0x786e6F51E928286D35084129f359c6fEa391357E`) without asking participants to enter it. It must differ from both participants. Existing agreements retain their locked arbitrator. This wallet resolves disputes; it does not custody the milestone budget. Normal manual acceptance is signed by the requester, and the escrow contract pays the worker directly. Automated acceptance uses the verifier configured in the contract, which is a separate role.
 
 [Linux Compose setup](deploy/README.md) covers PostgreSQL, Redis, private objects/scanner, separate worker, Envio and TLS, backups and restore checks. Public V2 deployment is an explicit operator command (`deploy:v2:testnet`) using funded local credentials; it validates and records fresh contracts without replacing V1. Do not run it as a local or CI prerequisite.
 

@@ -136,7 +136,8 @@ for (const locale of ["en", "zh-CN"] as const) {
         page.getByText(c.account.address, { exact: true }),
       ).toBeVisible();
       await worker.fill(c.account.address);
-      await arbitrator.fill(c.account.address);
+      await expect(arbitrator).toHaveValue(arbitratorAddress);
+      await expect(arbitrator).toHaveAttribute("readonly", "");
       await acceptance.fill(date(1));
       await amount.fill("0.0000001");
       await firstDue.fill(date(1));
@@ -147,7 +148,6 @@ for (const locale of ["en", "zh-CN"] as const) {
       await expect(worker).toBeFocused();
       await expect(alerts).toHaveText([
         m.v2.workerIsClient,
-        m.v2.arbitratorIsClient,
         m.v2.amountInvalid,
         m.v2.dueAfterAcceptance,
         m.v2.dueAfterPrevious,
@@ -177,8 +177,7 @@ for (const locale of ["en", "zh-CN"] as const) {
         fullPage: true,
       });
 
-      await worker.fill(`  ${workerAddress}  `);
-      await arbitrator.fill(workerAddress);
+      await worker.fill(arbitratorAddress);
       await amount.fill(".5");
       await firstDue.fill(date(7));
       await secondDue.fill(date(8));
@@ -187,8 +186,7 @@ for (const locale of ["en", "zh-CN"] as const) {
       await next.click();
       await expect(alerts).toHaveText(m.v2.arbitratorIsWorker);
       await expect(arbitrator).toBeFocused();
-      await expect(worker).toHaveValue(workerAddress);
-      await arbitrator.fill(` ${arbitratorAddress} `);
+      await worker.fill(`  ${workerAddress}  `);
       await next.click();
       await expect(
         page.getByRole("heading", { name: "Funding regression", exact: true }),

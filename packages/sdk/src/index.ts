@@ -76,9 +76,24 @@ export class PactFlowSdk {
   }
 
   private readonly versions = new Map<string, 1 | 2>();
+  private readonly versionRequests = new Map<string, Promise<1 | 2>>();
   async getProtocolVersion(escrow: Address): Promise<1 | 2> {
-    const cached = this.versions.get(escrow.toLowerCase());
+    const key = escrow.toLowerCase();
+    const cached = this.versions.get(key);
     if (cached) return cached;
+    const pending = this.versionRequests.get(key);
+    if (pending) return pending;
+    const request = this.detectProtocolVersion(escrow);
+    this.versionRequests.set(key, request);
+    try {
+      const version = await request;
+      this.versions.set(key, version);
+      return version;
+    } finally {
+      this.versionRequests.delete(key);
+    }
+  }
+  private async detectProtocolVersion(escrow: Address): Promise<1 | 2> {
     for (const addresses of [this.addresses, legacyProtocolAddresses]) {
       const registered = await this.publicClient.readContract({
         address: addresses.PactFactory,
@@ -86,11 +101,7 @@ export class PactFlowSdk {
         functionName: "isPact",
         args: [escrow],
       });
-      if (registered) {
-        const version = addresses.version ?? 1;
-        this.versions.set(escrow.toLowerCase(), version);
-        return version;
-      }
+      if (registered) return addresses.version ?? 1;
     }
     throw new Error("UNRECOGNIZED_PACT");
   }

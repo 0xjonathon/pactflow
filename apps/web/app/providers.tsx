@@ -1,8 +1,8 @@
 "use client";
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider, createConfig, http, injected } from "wagmi";
-import { monadTestnet } from "@pactflow/chain";
+import { WagmiProvider, createConfig, injected } from "wagmi";
+import { monadTestnet, pactHttp } from "@pactflow/chain";
 import { SessionProvider } from "../lib/product";
 import { SiteHeader } from "../components/SiteHeader";
 import { LoginDialog } from "../components/LoginDialog";
@@ -12,7 +12,7 @@ const config = createConfig({
   chains: [monadTestnet],
   connectors: [injected()],
   transports: {
-    [monadTestnet.id]: http(
+    [monadTestnet.id]: pactHttp(
       process.env.NEXT_PUBLIC_MONAD_RPC_URL ||
         monadTestnet.rpcUrls.default.http[0],
     ),

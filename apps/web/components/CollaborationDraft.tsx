@@ -26,6 +26,7 @@ import {
   methodLabel,
   rawAmount,
 } from "../lib/product";
+import { platformArbitrator } from "../lib/platform";
 import { protocolSdk } from "../lib/protocol";
 import {
   validatePactPayment,
@@ -96,9 +97,7 @@ export function CollaborationDraft({ id }: { id: string }) {
   const [ready, setReady] = useState(false);
   const started = useRef("");
   const submitting = useRef(false);
-  const [arb, setArb] = useState(
-    process.env.NEXT_PUBLIC_ARBITRATOR_ADDRESS ?? "",
-  );
+  const [arb, setArb] = useState(platformArbitrator);
   const [acceptBy, setAcceptBy] = useState("");
   const [hours, setHours] = useState("24");
   const [revisions, setRevisions] = useState("2");
@@ -427,10 +426,8 @@ export function CollaborationDraft({ id }: { id: string }) {
             <input
               {...props("arbitrator")}
               value={arb}
-              onChange={(e) => {
-                setArb(e.target.value);
-                setIssues((v) => v.filter((i) => i.field !== "arbitrator"));
-              }}
+              readOnly
+              className="mono"
             />,
           )}
           {field(
