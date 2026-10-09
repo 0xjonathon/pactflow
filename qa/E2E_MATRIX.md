@@ -17,3 +17,9 @@ Public Monad and deployed Linux checks need funded prepared accounts, repository
 `account.spec.ts` covers four cases in both languages: guest choice and wallet signing/rejection/retry/refresh/disconnect, absence of an installed wallet, wallet account switching with prior-session invalidation, and Google name/refresh/logout kept separate from wallet authority. The Google browser provider is explicitly mocked. Tests also check native modal focus return, menu Escape closing, WCAG rules for modal/menu and at least 24px separation between network filters and the first result card. Screenshots are `login-*.png` and `account-*.png`.
 
 Actual Google OAuth acceptance requires a project Web client ID and authorized origins. Local cryptographic tests verify signed provider tokens, issuer/audience/nonce/expiry/forgery and session replay/logout. No browser mock is treated as an external-provider pass.
+
+## Creation form regressions
+
+`pact-wizard.spec.ts` covers outcome and funding in English at 1440px and Chinese at 390px. Outcome cases exercise empty/whitespace, maximum lengths, field focus and short text. Funding cases exercise requester/worker/arbitrator conflicts, USDC precision, acceptance-before-submission and ordered deadlines, missing review duration, fractional revisions, whitespace normalization, corrected progression, and expired review-page terms rejected before any transaction. Error states also receive overflow and automated WCAG checks. `funding-*.png` records the actual rendered error states with local test wallets only.
+
+`pact-payment-validation.test.ts` adds nine deterministic unit cases for protocol date boundaries, conflicting/nonzero addresses, precision without rounding, individual/combined uint256 overflow, fractional review durations and integer revision bounds. These run in the root application test command and CI.

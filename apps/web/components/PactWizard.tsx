@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useAccount } from "wagmi";
 import { isAddress, parseUnits, zeroAddress, type Address } from "viem";
@@ -15,6 +15,7 @@ import {
   SignInCard,
   useSession,
   ErrorMessage,
+  ApiError,
   useData,
 } from "../lib/product";
 import { protocolSdk } from "../lib/protocol";
@@ -26,6 +27,11 @@ import {
 } from "../features/transaction/useTransactionFlow";
 import { buildVerificationPolicy } from "../lib/verification";
 import { NetworkGuard } from "./WalletBar";
+import {
+  validatePactPayment,
+  type PaymentField,
+  type PaymentIssue,
+} from "../lib/pact-payment-validation";
 const date = (days: number) => {
   const target = new Date(Date.now() + days * 86400000);
   return new Date(+target - target.getTimezoneOffset() * 60000)
@@ -39,13 +45,50 @@ type Delivery = {
   amount: string;
   due: string;
 };
+type PactField = "title" | "outcome" | PaymentField;
+function PaymentFieldRow({
+  field,
+  label,
+  hint,
+  error,
+  children,
+}: {
+  field: PaymentField;
+  label: string;
+  hint: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="wizard-field">
+      <label htmlFor={`pact-${field}`}>{label}</label>
+      {children}
+      <p className="field-hint" id={`pact-${field}-hint`}>
+        {hint}
+      </p>
+      {error && (
+        <p className="field-error" id={`pact-${field}-error`} role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+const wizardErrorKeys: Record<string, MessageKey> = {
+  V2_NOT_CONFIGURED: "v2.v2NotConfigured",
+  VERIFIER_NOT_CONFIGURED: "v2.verifierNotConfigured",
+  PACT_FIELDS_INVALID: "v2.validation",
+  PACT_INSUFFICIENT: "v2.insufficient",
+  AI_CRITERIA_UNAVAILABLE: "v2.aiUnavailable",
+};
 export function PactWizard() {
   const { t, locale } = useI18n();
   const [suggesting, setSuggesting] = useState<number>();
   const [suggestions, setSuggestions] = useState<Record<number, string[]>>({});
   const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<"title" | "outcome", MessageKey>>
+    Partial<Record<PactField, MessageKey>>
   >({});
+  const [focusField, setFocusField] = useState<PactField>();
   const { user } = useSession();
   const capabilities = useData<{ ai: boolean }>(
     "verification-capabilities",
@@ -87,10 +130,45 @@ export function PactWizard() {
     "stepsPayment",
     "stepsReview",
   ] as const;
-  const update = (i: number, patch: Partial<Delivery>) =>
+  useEffect(() => {
+    if (focusField) {
+      document.getElementById(`pact-${focusField}`)?.focus();
+      setFocusField(undefined);
+    }
+  }, [focusField, step]);
+  const clearField = (field: PactField) =>
+    setFieldErrors((current) => ({ ...current, [field]: undefined }));
+  const update = (i: number, patch: Partial<Delivery>) => {
+    if (patch.amount !== undefined) clearField(`delivery-${i}-amount`);
+    if (patch.due !== undefined) clearField(`delivery-${i}-due`);
     setDeliveries((items) =>
       items.map((d, n) => (n === i ? { ...d, ...patch } : d)),
     );
+  };
+  const paymentIssues = () =>
+    validatePactPayment({
+      client: address,
+      worker,
+      arbitrator: arb,
+      acceptBy,
+      hours,
+      revisions,
+      deliveries,
+    });
+  const showPaymentIssues = (issues: PaymentIssue[]) => {
+    setFieldErrors(
+      Object.fromEntries(issues.map(({ field, code }) => [field, code])),
+    );
+    setStep(3);
+    setFocusField(issues[0].field);
+  };
+  const fieldProps = (field: PaymentField) => ({
+    id: `pact-${field}`,
+    "aria-invalid": !!fieldErrors[field],
+    "aria-describedby": `pact-${field}-hint${fieldErrors[field] ? ` pact-${field}-error` : ""}`,
+  });
+  const fieldError = (field: PaymentField) =>
+    fieldErrors[field] ? t(fieldErrors[field]) : undefined;
   const policy = (deliveryIndex = 0): VerificationPolicy | null =>
     method === "ClientOnly"
       ? null
@@ -165,27 +243,6 @@ export function PactWizard() {
       policy();
       return true;
     }
-    if (step === 3)
-      return (
-        isAddress(worker) &&
-        isAddress(arb) &&
-        new Set([
-          address?.toLowerCase(),
-          worker.toLowerCase(),
-          arb.toLowerCase(),
-        ]).size === 3 &&
-        deliveries.every(
-          (d, i) =>
-            parseUnits(d.amount, 6) > 0n &&
-            Date.parse(d.due) >
-              (i ? Date.parse(deliveries[i - 1].due) : Date.parse(acceptBy)),
-        ) &&
-        Date.parse(acceptBy) > Date.now() &&
-        Number(revisions) >= 0 &&
-        Number(revisions) <= 10 &&
-        Number(hours) > 0 &&
-        Number(hours) <= 720
-      );
     return true;
   };
   const next = () => {
@@ -199,14 +256,20 @@ export function PactWizard() {
         issues.outcome = "v2.outcomeTooLong";
       setFieldErrors(issues);
       if (issues.title || issues.outcome) {
-        document
-          .getElementById(issues.title ? "pact-title" : "pact-outcome")
-          ?.focus();
+        setFocusField(issues.title ? "title" : "outcome");
         return;
       }
     }
+    if (step === 3) {
+      const issues = paymentIssues();
+      if (issues.length) {
+        showPaymentIssues(issues);
+        return;
+      }
+      setFieldErrors({});
+    }
     try {
-      if (!validStep()) throw new Error(t("v2.validation"));
+      if (!validStep()) throw new Error("PACT_FIELDS_INVALID");
       setStep((s) => s + 1);
     } catch (e) {
       setError(e);
@@ -215,6 +278,15 @@ export function PactWizard() {
   const confirm = async () => {
     if (!wallet || !address) return;
     setError(undefined);
+    // Terms can expire or the wallet can change while the review page is open.
+    // A created escrow already has immutable terms and must remain retryable.
+    if (!escrow) {
+      const issues = paymentIssues();
+      if (issues.length) {
+        showPaymentIssues(issues);
+        return;
+      }
+    }
     try {
       if (sdk.addresses.version !== 2) throw new Error("V2_NOT_CONFIGURED");
       const verifier = process.env.NEXT_PUBLIC_VERIFIER_ADDRESS ?? zeroAddress;
@@ -229,7 +301,7 @@ export function PactWizard() {
         title: d.title,
         acceptanceCriteria: d.criteria.split("\n").filter(Boolean),
         requiredEvidence: [d.type],
-        amount: parseUnits(d.amount, 6).toString(),
+        amount: parseUnits(d.amount.trim(), 6).toString(),
         dueAt: String(Math.floor(Date.parse(d.due) / 1000)),
       }));
       const total = milestones.reduce((n, m) => n + BigInt(m.amount), 0n);
@@ -244,8 +316,8 @@ export function PactWizard() {
           .filter(Boolean),
         visibility: "PARTICIPANTS",
         client: address,
-        worker,
-        arbitrator: arb,
+        worker: worker.trim(),
+        arbitrator: arb.trim(),
         token: sdk.addresses.SettlementToken,
         totalBudget: total.toString(),
         clientBond: "0",
@@ -267,8 +339,8 @@ export function PactWizard() {
               protocolVersion: 2,
               agreementHash: hashAgreement(spec as unknown as CanonicalValue),
               client: address,
-              worker: worker as Address,
-              arbitrator: arb as Address,
+              worker: spec.worker as Address,
+              arbitrator: spec.arbitrator as Address,
               token: sdk.addresses.SettlementToken,
               totalBudget: total,
               clientBond: 0n,
@@ -316,7 +388,7 @@ export function PactWizard() {
           address,
         );
         if (balance < state.totalBudget + state.clientBond)
-          throw new Error(t("v2.insufficient"));
+          throw new Error("PACT_INSUFFICIENT");
         const allowance = await sdk.getAllowance(
           state.settlementToken,
           address,
@@ -488,7 +560,7 @@ export function PactWizard() {
                             [i]: result.criteria,
                           }));
                         } catch {
-                          setError(new Error(t("v2.aiUnavailable")));
+                          setError(new Error("AI_CRITERIA_UNAVAILABLE"));
                         } finally {
                           setSuggesting(undefined);
                         }
@@ -674,76 +746,149 @@ export function PactWizard() {
               </>
             )}
             {step === 3 && (
-              <>
+              <div className="payment-fields">
                 <h2>{t("v2.stepsPayment")}</h2>
-                <label>
-                  {t("v2.workerAddress")}
+                <div className="notice">
+                  <p>{t("v2.clientAccount")}</p>
+                  <strong className="mono small">{address}</strong>
+                  <p className="small">{t("v2.threeAccountsHint")}</p>
+                </div>
+                <PaymentFieldRow
+                  field="worker"
+                  label={t("v2.workerAddress")}
+                  hint={t("v2.workerHint")}
+                  error={fieldError("worker")}
+                >
                   <input
+                    {...fieldProps("worker")}
                     value={worker}
-                    onChange={(e) => setWorker(e.target.value)}
+                    onChange={(e) => {
+                      setWorker(e.target.value);
+                      clearField("worker");
+                    }}
+                    onBlur={() => setWorker((value) => value.trim())}
                     className="mono"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder="0x…"
+                    required
                   />
-                </label>
-                <label>
-                  {t("v2.arbitrator")}
+                </PaymentFieldRow>
+                <PaymentFieldRow
+                  field="arbitrator"
+                  label={t("v2.arbitrator")}
+                  hint={t("v2.arbitratorHint")}
+                  error={fieldError("arbitrator")}
+                >
                   <input
+                    {...fieldProps("arbitrator")}
                     value={arb}
-                    onChange={(e) => setArb(e.target.value)}
+                    onChange={(e) => {
+                      setArb(e.target.value);
+                      clearField("arbitrator");
+                    }}
+                    onBlur={() => setArb((value) => value.trim())}
                     className="mono"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder="0x…"
+                    required
                   />
-                </label>
+                </PaymentFieldRow>
+                <PaymentFieldRow
+                  field="acceptBy"
+                  label={t("v2.acceptBy")}
+                  hint={t("v2.acceptanceHint")}
+                  error={fieldError("acceptBy")}
+                >
+                  <input
+                    {...fieldProps("acceptBy")}
+                    type="datetime-local"
+                    value={acceptBy}
+                    onChange={(e) => {
+                      setAcceptBy(e.target.value);
+                      clearField("acceptBy");
+                    }}
+                    required
+                  />
+                </PaymentFieldRow>
                 {deliveries.map((d, i) => (
                   <div className="form-grid" key={i}>
-                    <label>
-                      {d.title} · {t("v2.amount")}
+                    <PaymentFieldRow
+                      field={`delivery-${i}-amount`}
+                      label={`${d.title} · ${t("v2.amount")}`}
+                      hint={t("v2.amountHint")}
+                      error={fieldError(`delivery-${i}-amount`)}
+                    >
                       <input
+                        {...fieldProps(`delivery-${i}-amount`)}
                         inputMode="decimal"
                         value={d.amount}
                         onChange={(e) => update(i, { amount: e.target.value })}
+                        required
                       />
-                    </label>
-                    <label>
-                      {t("v2.due")}
+                    </PaymentFieldRow>
+                    <PaymentFieldRow
+                      field={`delivery-${i}-due`}
+                      label={`${d.title} · ${t("v2.due")}`}
+                      hint={t(i ? "v2.laterDueHint" : "v2.firstDueHint")}
+                      error={fieldError(`delivery-${i}-due`)}
+                    >
                       <input
+                        {...fieldProps(`delivery-${i}-due`)}
                         type="datetime-local"
                         value={d.due}
                         onChange={(e) => update(i, { due: e.target.value })}
+                        required
                       />
-                    </label>
+                    </PaymentFieldRow>
                   </div>
                 ))}
                 <div className="form-grid">
-                  <label>
-                    {t("v2.acceptBy")}
+                  <PaymentFieldRow
+                    field="hours"
+                    label={t("v2.reviewPeriod")}
+                    hint={t("v2.reviewHoursHint")}
+                    error={fieldError("hours")}
+                  >
                     <input
-                      type="datetime-local"
-                      value={acceptBy}
-                      onChange={(e) => setAcceptBy(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    {t("v2.reviewPeriod")}
-                    <input
+                      {...fieldProps("hours")}
                       type="number"
-                      min="1"
+                      min="0"
                       max="720"
+                      step="any"
                       value={hours}
-                      onChange={(e) => setHours(e.target.value)}
+                      onChange={(e) => {
+                        setHours(e.target.value);
+                        clearField("hours");
+                      }}
+                      required
                     />
-                  </label>
-                  <label>
-                    {t("v2.revisionLimit")}
+                  </PaymentFieldRow>
+                  <PaymentFieldRow
+                    field="revisions"
+                    label={t("v2.revisionLimit")}
+                    hint={t("v2.revisionsHint")}
+                    error={fieldError("revisions")}
+                  >
                     <input
+                      {...fieldProps("revisions")}
                       type="number"
                       min="0"
                       max="10"
+                      step="1"
                       value={revisions}
-                      onChange={(e) => setRevisions(e.target.value)}
+                      onChange={(e) => {
+                        setRevisions(e.target.value);
+                        clearField("revisions");
+                      }}
+                      required
                     />
-                  </label>
+                  </PaymentFieldRow>
                 </div>
+                <p className="small">{t("v2.localTimeHint")}</p>
                 <p className="notice">{t("v2.secureDesc")}</p>
-              </>
+              </div>
             )}
             {step === 4 && (
               <>
@@ -788,18 +933,18 @@ export function PactWizard() {
                 <p>{t("v2.privacy")}</p>
               </>
             )}
-            <ErrorMessage error={error} />
-            {error instanceof Error && (
-              <p role="alert">
-                {["V2_NOT_CONFIGURED", "VERIFIER_NOT_CONFIGURED"].includes(
-                  error.message,
-                )
-                  ? t("v2.v2NotConfigured")
-                  : error.message === t("v2.validation") ||
-                      error.message === t("v2.insufficient")
-                    ? error.message
-                    : t(readableError(error).code)}
-              </p>
+            {error instanceof ApiError ? (
+              <ErrorMessage error={error} />
+            ) : (
+              !!error && (
+                <p role="alert" className="notice error">
+                  {t(
+                    (error instanceof Error &&
+                      wizardErrorKeys[error.message]) ||
+                      readableError(error).code,
+                  )}
+                </p>
+              )
             )}
             <div className="actions">
               {step > 0 && (

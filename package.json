@@ -25,7 +25,7 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "test": "node --import tsx --test apps/api/src/*.test.ts apps/verifier/src/**/*.test.ts indexer/src/*.test.ts",
+    "test": "node --import tsx --test apps/api/src/*.test.ts apps/verifier/src/**/*.test.ts apps/web/lib/*.test.ts indexer/src/*.test.ts",
     "test:contracts": "forge test --root packages/contracts",
     "test:e2e:local": "pnpm --filter @pactflow/web exec playwright test --config playwright.local.config.ts",
     "local:deploy": "node --import tsx scripts/local-chain.ts",

@@ -2077,6 +2077,17 @@ button.secondary {
   display: grid;
   gap: 6px;
 }
+.payment-fields {
+  display: grid;
+  gap: 24px;
+}
+.payment-fields h2,
+.payment-fields .wizard-field > label {
+  margin: 0;
+}
+.payment-fields .mono {
+  overflow-wrap: anywhere;
+}
 .wizard input[aria-invalid="true"],
 .wizard textarea[aria-invalid="true"] {
   border-color: #ef8995;

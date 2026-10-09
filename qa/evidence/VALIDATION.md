@@ -38,3 +38,12 @@ The first V2 creation step incorrectly imposed undocumented minima of five title
 - Two earlier regression-test runs had locator failures (a global empty alert and implicit textarea label text after React rerender). The final tests scope alerts to the wizard and identify editable fields by their accessible role/name. No application-code changes followed the successful full collaboration run.
 
 The earlier 16-case account/product baseline is unchanged; this fix reran the two affected full collaboration cases and added the two field regressions. Real Google/provider/public-deployment gates remain as recorded above. No public chain transactions were sent.
+
+## Funding validation acceptance — 2026-10-09
+
+- Application suite: 31 total, **29 PASS / 2 SKIP** (real PostgreSQL/Redis remain unavailable). Nine new funding unit cases cover role conflicts/zero addresses, copied whitespace, exact USDC precision without rounding, uint256 budget overflow, V2 acceptance/submission boundaries, review durations and integer revisions. The root test command includes these cases in CI.
+- Final complete browser suite: **20/20 PASS in 3.1 minutes**, including the earlier sixteen cases and four outcome/funding regressions. Funding is checked at 1440px English and 390px Chinese with multiple invalid fields, specific translated messages/focus, corrected progression and wallet whitespace normalization. An acceptance deadline expiring on the review page returns to funding before any transaction; the account nonce is unchanged. Automated error-state WCAG and horizontal overflow checks pass.
+- Web typecheck, root lint/format, 758-key bilingual parity, diff check and optimized local production build: PASS. The preview runs the updated optimized build.
+- `funding-{en,zh-CN}.png` are inspected actual error-state screenshots with local wallets only. The existing automatic/manual chain JSON, rendered receipts and viewport/accessibility evidence were refreshed by the full run. No authorization token, private key or public transaction is included.
+
+The page now explains three distinct roles, shows the current requester wallet, places acceptance before submission deadlines, and points each funding failure to its own field. Address/amount normalization is consistent between the canonical spec and the actual transaction. Created escrows keep their frozen terms and existing upload/funding recovery paths. Contract source is unchanged; real external services and production release gates remain blocked as previously recorded.
