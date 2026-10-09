@@ -1,0 +1,102 @@
+name: pactflow
+x-api: &api
+  image: pactflow-api:${PACTFLOW_RELEASE:-local}
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile.lightweight
+  env_file: /opt/pactflow/shared/runtime.env
+  mem_limit: 384m
+  cpus: 0.8
+  init: true
+  security_opt: [no-new-privileges:true]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    mem_limit: 192m
+    environment:
+      POSTGRES_DB: pactflow
+      POSTGRES_USER: pactflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    command:
+      [
+        postgres,
+        -c,
+        shared_buffers=32MB,
+        -c,
+        max_connections=20,
+        -c,
+        work_mem=2MB,
+      ]
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U pactflow -d pactflow"]
+      interval: 10s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 64m
+    command:
+      [
+        redis-server,
+        --appendonly,
+        "yes",
+        --maxmemory,
+        32mb,
+        --maxmemory-policy,
+        noeviction,
+      ]
+    volumes: [redis:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      retries: 10
+  migrate:
+    <<: *api
+    working_dir: /app/packages/db
+    command: [node, --import, tsx, src/migrate.ts]
+    depends_on:
+      postgres: { condition: service_healthy }
+  api:
+    <<: *api
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+  ingress:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    mem_limit: 64m
+    environment:
+      API_HOST: ${API_HOST:?required}
+    ports: ["80:80", "18443:18443"]
+    volumes:
+      [
+        ./Caddyfile.lightweight:/etc/caddy/Caddyfile:ro,
+        caddy:/data,
+        caddy-config:/config,
+      ]
+    depends_on:
+      api: { condition: service_healthy }
+volumes:
+  postgres:
+  redis:
+  caddy:
+  caddy-config:

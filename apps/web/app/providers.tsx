@@ -6,7 +6,6 @@ import { monadTestnet } from "@pactflow/chain";
 import { SessionProvider } from "../lib/product";
 import { SiteHeader } from "../components/SiteHeader";
 import { LoginDialog } from "../components/LoginDialog";
-import { DeploymentNotice } from "../components/DeploymentNotice";
 import { I18nProvider, type Locale } from "../lib/i18n";
 
 const config = createConfig({
@@ -35,7 +34,6 @@ export function Providers({
         <I18nProvider initialLocale={initialLocale}>
           <SessionProvider>
             <SiteHeader />
-            <DeploymentNotice />
             <LoginDialog />
             {children}
           </SessionProvider>

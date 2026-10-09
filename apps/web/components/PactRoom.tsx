@@ -112,6 +112,10 @@ const tabs = [
 export function PactRoom({ escrow }: { escrow: Address }) {
   const { t, locale } = useI18n();
   const { user } = useSession();
+  const capabilities = useData<{ uploads: { available: boolean } }>(
+    "verification-capabilities",
+    "/verification/capabilities",
+  );
   const { address } = useAccount();
   const wallet = usePactWalletAdapter();
   const sdk = useMemo(() => protocolSdk(), []);
@@ -699,7 +703,14 @@ export function PactRoom({ escrow }: { escrow: Address }) {
                                 "TRANSACTION",
                                 "OTHER_URL",
                               ].map((type) => (
-                                <option key={type} value={type}>
+                                <option
+                                  key={type}
+                                  value={type}
+                                  disabled={
+                                    ["FILE", "IMAGE"].includes(type) &&
+                                    !capabilities.data?.uploads?.available
+                                  }
+                                >
                                   {evidenceTypeLabel(type, t)}
                                 </option>
                               ))}

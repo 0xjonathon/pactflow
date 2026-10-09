@@ -91,10 +91,10 @@ export function PactWizard() {
   >({});
   const [focusField, setFocusField] = useState<PactField>();
   const { user } = useSession();
-  const capabilities = useData<{ ai: { available: boolean } }>(
-    "verification-capabilities",
-    "/verification/capabilities",
-  );
+  const capabilities = useData<{
+    ai: { available: boolean };
+    uploads: { available: boolean };
+  }>("verification-capabilities", "/verification/capabilities");
   const { address } = useAccount();
   const wallet = usePactWalletAdapter();
   const flow = useTransactionFlow();
@@ -629,7 +629,14 @@ export function PactWizard() {
                           "TRANSACTION",
                           "OTHER_URL",
                         ].map((v) => (
-                          <option key={v} value={v}>
+                          <option
+                            key={v}
+                            value={v}
+                            disabled={
+                              ["FILE", "IMAGE"].includes(v) &&
+                              !capabilities.data?.uploads?.available
+                            }
+                          >
                             {evidenceTypeLabel(v, t)}
                           </option>
                         ))}

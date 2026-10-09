@@ -1,3 +1,4 @@
+import { validateRuntime, uploadsAvailable } from "./runtime-config";
 import { ProtocolIndexer } from "@pactflow/indexer";
 import { registerUploadRoutes } from "./uploads";
 import { registerTrustRoutes } from "./trust";
@@ -32,30 +33,8 @@ config({
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl)
   throw new Error("DATABASE_URL is required for verification API");
-if (process.env.NODE_ENV === "production") {
-  for (const name of [
-    "REDIS_URL",
-    "ENVIO_GRAPHQL_URL",
-    "S3_ENDPOINT",
-    "S3_PUBLIC_ENDPOINT",
-    "S3_BUCKET",
-    "S3_ACCESS_KEY_ID",
-    "S3_SECRET_ACCESS_KEY",
-    "CLAMAV_HOST",
-    "WEB_ORIGIN",
-    "NEXT_PUBLIC_PACT_FACTORY_V2_ADDRESS",
-  ])
-    if (!process.env[name]) throw new Error(`${name} required in production`);
-  if (
-    process.env.PACTFLOW_LOCAL_CHAIN === "true" ||
-    process.env.VERIFIER_ALLOW_LOCALHOST === "true"
-  )
-    throw new Error("Local testing modes forbidden in production");
-  if (!databaseUrl.startsWith("postgres"))
-    throw new Error("Production requires PostgreSQL");
-  if (new URL(process.env.WEB_ORIGIN!).protocol !== "https:")
-    throw new Error("Production origin requires HTTPS");
-}
+validateRuntime(process.env);
+const lightweight = process.env.PACTFLOW_LIGHTWEIGHT === "true";
 const { db, close: closeDb } = connectDatabase(databaseUrl);
 const repository = new VerificationRepository(db);
 const sdk = new PactFlowSdk({ rpcUrl: process.env.MONAD_TESTNET_RPC_URL });
@@ -64,7 +43,15 @@ const processor = (id: string) =>
     rpcUrl: process.env.MONAD_TESTNET_RPC_URL,
   }).then(() => {});
 const queue = process.env.REDIS_URL
-  ? new BullMQVerificationQueue(process.env.REDIS_URL)
+  ? new BullMQVerificationQueue(
+      process.env.REDIS_URL,
+      lightweight
+        ? async (id) => {
+            await repository.retryJob(id);
+            await processor(id);
+          }
+        : undefined,
+    )
   : new InlineVerificationQueue(processor);
 const app = Fastify({
   logger: true,
@@ -145,6 +132,7 @@ app.get("/health", async (_request, reply) => {
   try {
     const { sql } = await import("drizzle-orm");
     await db.execute(sql`select 1`);
+    if (queue instanceof BullMQVerificationQueue) await queue.health();
     return { status: "ok" };
   } catch {
     return reply.code(503).send({ status: "unavailable" });
@@ -158,7 +146,12 @@ app.get("/api/v1/indexer/health", async () => {
       process.env.PACTFLOW_LOCAL_CHAIN === "true" ? "latest" : "finalized",
   });
   return {
-    source: process.env.ENVIO_GRAPHQL_URL ? "ENVIO" : "LOCAL_RPC",
+    source: process.env.ENVIO_GRAPHQL_URL
+      ? "ENVIO"
+      : process.env.PACTFLOW_LOCAL_CHAIN === "true"
+        ? "LOCAL_RPC"
+        : "MONAD_RPC",
+    startBlock: Number(process.env.INDEXER_START_BLOCK ?? 0),
     status: cursor ? "INDEXED" : "PENDING",
     indexedBlock: cursor?.blockNumber ?? null,
     finalizedBlock: Number(head.number),
@@ -305,6 +298,7 @@ app.setErrorHandler((error, _request, reply) => {
 });
 app.get("/api/v1/verification/capabilities", async () => ({
   manual: { available: true },
+  uploads: { available: uploadsAvailable(process.env) },
   ai: { available: !!process.env.OPENAI_API_KEY && !!process.env.AI_MODEL },
   github: { available: true, requiresPinnedCommit: true },
   adapters: adapterCapabilities(),
@@ -415,7 +409,17 @@ app.get("/api/v1/pacts/:escrow/verifications", async (request) => {
   const rows = await repository.listJobs(escrow);
   return full ? rows : rows.map(publicJob);
 });
+const recoveryTimer = lightweight
+  ? setInterval(() => {
+      void repository
+        .recoverAbandonedJobs()
+        .then((jobs) => Promise.all(jobs.map((job) => queue.enqueue(job.id))))
+        .catch(() => app.log.warn("Verification recovery will retry"));
+    }, 30_000)
+  : undefined;
+recoveryTimer?.unref();
 app.addHook("onClose", async () => {
+  if (recoveryTimer) clearInterval(recoveryTimer);
   clearInterval(indexTimer);
   await queue.close();
   await closeDb();

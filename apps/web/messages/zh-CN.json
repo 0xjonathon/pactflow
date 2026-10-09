@@ -505,7 +505,8 @@
     "JOB_DEADLINE_PASSED": "交付期限已过，请关闭此需求并发布新的安排。",
     "DRAFT_RECOVERY_REQUIRED": "无法恢复原协议条款，请打开已有协议，或恢复创建时浏览器保存的草稿。",
     "ALREADY_APPLIED": "你已向这条需求提交合作提案，请前往我的工作查看。",
-    "BACKEND_NOT_CONFIGURED": "协作服务尚未接入，请在功能开放后再试。"
+    "BACKEND_NOT_CONFIGURED": "协作服务尚未接入，请在功能开放后再试。",
+    "UPLOADS_UNAVAILABLE": "文件上传暂不可用，请使用链接、文本或 JSON 证据。"
   },
   "commerce": {
     "eyebrow": "以交付成果为中心的合作市场",

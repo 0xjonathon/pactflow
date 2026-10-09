@@ -1,3 +1,4 @@
+import { uploadsAvailable } from "./runtime-config";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { PactFlowDatabase } from "@pactflow/db/client";
 import * as s from "@pactflow/db";
@@ -26,6 +27,8 @@ export function registerUploadRoutes(
   );
   app.post("/api/v1/uploads", { bodyLimit: MAX_FILE_BYTES }, async (req) => {
     const a = await actor(req);
+    if (!uploadsAvailable(process.env))
+      throw new ProductError(503, "UPLOADS_UNAVAILABLE");
     const q = z
       .object({ name: z.string().max(160), mime: z.string().max(80) })
       .parse(req.query);
@@ -70,6 +73,8 @@ export function registerUploadRoutes(
   });
   app.get("/api/v1/uploads/:id/download", async (req) => {
     const a = await actor(req);
+    if (!uploadsAvailable(process.env))
+      throw new ProductError(503, "UPLOADS_UNAVAILABLE");
     const id = z.uuid().parse((req.params as { id: string }).id);
     const [file] = await db
       .select()

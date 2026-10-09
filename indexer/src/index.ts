@@ -295,15 +295,20 @@ export class ProtocolIndexer {
   async sync(reindex = false) {
     if (process.env.ENVIO_GRAPHQL_URL)
       return this.syncEnvio(process.env.ENVIO_GRAPHQL_URL);
-    if (process.env.NODE_ENV === "production")
+    const lightweight =
+      process.env.PACTFLOW_LIGHTWEIGHT === "true" &&
+      process.env.PACTFLOW_INDEXER_MODE === "rpc";
+    if (process.env.NODE_ENV === "production" && !lightweight)
       throw new Error("ENVIO_GRAPHQL_URL_REQUIRED");
+    if (lightweight && !/^\d+$/.test(process.env.INDEXER_START_BLOCK ?? ""))
+      throw new Error("INDEXER_START_BLOCK_REQUIRED");
     const head = await this.client.getBlock({
       blockTag:
         process.env.PACTFLOW_LOCAL_CHAIN === "true" ? "latest" : "finalized",
     });
-    const to = head.number;
+    let to = head.number;
     const startBlock =
-      process.env.PACTFLOW_LOCAL_CHAIN === "true"
+      process.env.PACTFLOW_LOCAL_CHAIN === "true" || lightweight
         ? Number(process.env.INDEXER_START_BLOCK ?? 0)
         : deployment.deploymentBlock;
     if (to === null) throw new Error("Finalized head unavailable");
@@ -316,6 +321,8 @@ export class ProtocolIndexer {
         ? startBlock
         : Math.max(startBlock, (cursor?.blockNumber ?? startBlock) - 32),
     );
+    if (lightweight && to > from + 1999n) to = from + 1999n;
+    if (from > to) throw new Error("INDEXER_WAITING_FOR_FINALITY");
     // Re-read a finalized overlap: replace its canonical events atomically before rebuilding derived facts.
     const registryAndFactory = await this.logs(
       [
@@ -426,7 +433,11 @@ export class ProtocolIndexer {
     return {
       pacts: pacts.length,
       events: raw.length,
-      finalizedBlock: Number(to),
+      indexedBlock: Number(to),
+      finalizedBlock: Number(head.number),
+      lag: Number(head.number) - Number(to),
+      source:
+        process.env.PACTFLOW_LOCAL_CHAIN === "true" ? "LOCAL_RPC" : "MONAD_RPC",
     };
   }
   async rebuild(pacts: PactView[]) {
