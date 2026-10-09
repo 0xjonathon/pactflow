@@ -1,0 +1,29 @@
+{
+  "protocolVersion": 2,
+  "chainId": 10143,
+  "PactFactoryV2": "0xbce5397fc2ec37769d664961405707fec1c6da69",
+  "VerifierRegistryV2": "0x2038b44c4b05bc2eb01f031f2f91e02baa1b9a18",
+  "ReputationRegistryV2": "0x3dd792ca984322e84864ec9fb47e237f51707a64",
+  "Implementation": "0x781E7c2A276f4C9F00b3B53f5d90C15FE46110E9",
+  "SettlementToken": "0x534b2f3A21130d7a60830c2Df862319e593943A3",
+  "Verifier": "0x3d263750cef875EafE824338aFbfec476f20A1e2",
+  "deploymentBlock": 69494631,
+  "transactions": {
+    "PactFactoryV2": {
+      "hash": "0xd260f6d2d7167caf90acd762453059bb7b4a1aa9deae249a43d72a1af7d1c365",
+      "block": "69494644",
+      "codeHash": "0xc6ac05d5070100c3cc6409340ed8ec7f0cff7583e2cb2abc543498c732a254d5"
+    },
+    "VerifierRegistryV2": {
+      "hash": "0x51ac29b110f6d7b830b1a7d278691098fb4bca446a60644f9e7cb8b117f17b63",
+      "block": "69494631",
+      "codeHash": "0xef7b61d6dccadca304788ccb4fd68afb29a7c7742932e73229ac9117e9fc473f"
+    },
+    "ReputationRegistryV2": {
+      "hash": "0xa5b4f8e83457a8561be366328eaf9071da7ffabd4001dce0f173499db791ec5f",
+      "block": "69494640",
+      "codeHash": "0xad3e731fc16074eca86158ca80eda1925f74a3cb1e45a913614ae93bc6b71bf5"
+    }
+  },
+  "recordedAt": "2026-10-09T08:40:16.445Z"
+}
