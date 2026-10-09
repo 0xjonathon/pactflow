@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+.git
+.local
+.turbo
+**/.next
+**/dist
+**/out
+**/cache
+**/*.tsbuildinfo
+**/*.log
+**/.env
+**/.env.*
+deploy/.env
+packages/contracts/lib
+apps/web/test-results
+apps/web/playwright-report

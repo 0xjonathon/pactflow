@@ -2998,6 +2998,21 @@ main footer.small a {
 }
 
 /* Shared PactFlow identity across navigation and product footers. */
+.deployment-notice {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px 16px;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  border-bottom: 1px solid #594c86;
+  background: #241c39;
+  color: #e8defd;
+  font-size: 14px;
+}
+.deployment-notice strong {
+  white-space: nowrap;
+}
 .brand {
   display: inline-flex;
   align-items: center;

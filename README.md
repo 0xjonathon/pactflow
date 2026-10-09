@@ -20,6 +20,8 @@ See [the product journey](docs/PRODUCT_JOURNEY.md), [hackathon submission copy](
 
 ## Current status
 
+[Public website preview](https://pactflow-lovat.vercel.app) is hosted on Vercel. It is explicitly marked as a browsing preview: collaboration services are not connected, so account verification, brief publication and the new agreement workflow are unavailable. This website alone does not satisfy the hackathon's working Monad product requirement. See [Vercel deployment](deploy/VERCEL.md).
+
 V1 contracts and deployment records remain available; new revision-capable Pacts use separately configured V2 contracts. These identifiers describe contract compatibility, not the product name. This project has passed local chain acceptance, but public deployment and production service acceptance remain blocked. See [production audit](qa/PRODUCTION_AUDIT.md).
 
 [Download the transparent PactFlow logo](assets/brand/pactflow-logo.png) for the hackathon submission (1254 × 1254 PNG, under 2 MB).

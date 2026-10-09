@@ -18,7 +18,12 @@ export async function generateMetadata(): Promise<Metadata> {
       ? "PactFlow — 可验证的工作网络"
       : "PactFlow — The Verifiable Work Network",
     metadataBase: new URL(
-      process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3011",
+      process.env.NEXT_PUBLIC_SITE_URL ||
+        (process.env.VERCEL_PROJECT_PRODUCTION_URL
+          ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+          : process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : "http://localhost:3011"),
     ),
     openGraph: { siteName: "PactFlow", type: "website" },
     twitter: { card: "summary" },

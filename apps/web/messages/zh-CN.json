@@ -504,7 +504,8 @@
     "WALLET_CHANGED": "钱包账户已切换，请重新验证当前钱包。",
     "JOB_DEADLINE_PASSED": "交付期限已过，请关闭此需求并发布新的安排。",
     "DRAFT_RECOVERY_REQUIRED": "无法恢复原协议条款，请打开已有协议，或恢复创建时浏览器保存的草稿。",
-    "ALREADY_APPLIED": "你已向这条需求提交合作提案，请前往我的工作查看。"
+    "ALREADY_APPLIED": "你已向这条需求提交合作提案，请前往我的工作查看。",
+    "BACKEND_NOT_CONFIGURED": "协作服务尚未接入，请在功能开放后再试。"
   },
   "commerce": {
     "eyebrow": "以交付成果为中心的合作市场",
@@ -897,5 +898,9 @@
     "inviteFailed": "需求已发布，但邀请未送达，请将需求链接分享给合作伙伴。",
     "briefStatus": "需求状态",
     "savedRules": "此草稿保留原先的验证规则，可继续使用或改为本人验收。如需重新设计自动规则，请发布新需求。"
+  },
+  "deployment": {
+    "preview": "网站预览",
+    "pending": "协作功能尚未开放，当前可浏览产品页面。"
   }
 }

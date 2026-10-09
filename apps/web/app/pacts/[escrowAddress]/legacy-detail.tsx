@@ -27,7 +27,7 @@ import {
   verificationModeLabel,
   type MessageKey,
 } from "../../../lib/i18n";
-import { useData, api, type Job } from "../../../lib/product";
+import { API, useData, api, type Job } from "../../../lib/product";
 import { readAgreementUri } from "../../../lib/verification";
 
 function same(a?: string, b?: string) {
@@ -40,7 +40,7 @@ function obj(
     ? value
     : null;
 }
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const apiUrl = API;
 type VerificationJob = {
   id: string;
   milestoneIndex: number;

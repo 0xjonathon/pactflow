@@ -5,7 +5,8 @@ export const publicReceipt = cache(async (id: string) => {
     const base =
       process.env.INTERNAL_API_URL ??
       process.env.NEXT_PUBLIC_API_URL ??
-      "http://127.0.0.1:3012";
+      (process.env.NODE_ENV === "production" ? null : "http://127.0.0.1:3012");
+    if (!base) return null;
     const response = await fetch(`${base}/api/v1/receipts/${id}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(5000),

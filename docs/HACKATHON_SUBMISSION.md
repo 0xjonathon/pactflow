@@ -84,7 +84,7 @@ We plan to start with small contributor tasks in builder communities and improve
 - Demo script: [150-second judge demo](../qa/JUDGE_DEMO.md)
 - Local proof: [validation evidence](../qa/evidence/VALIDATION.md)
 - Screenshots: [English journey](../qa/evidence/journey-en.png), [Chinese journey](../qa/evidence/journey-zh-CN.png)
-- Public app URL: pending deployment; localhost is not a public demo URL.
+- Website preview: https://pactflow-lovat.vercel.app — frontend browsing only; does not yet satisfy the working Monad Live product requirement.
 - Demo video URL: pending recording and upload.
 - Public V2 contract and transaction links: pending actual deployment/smoke.
 

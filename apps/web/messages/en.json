@@ -504,7 +504,8 @@
     "WALLET_CHANGED": "Your wallet account changed. Please verify the current wallet.",
     "JOB_DEADLINE_PASSED": "The delivery deadline has passed. Close the brief and publish a new schedule.",
     "DRAFT_RECOVERY_REQUIRED": "The original agreement terms could not be recovered. Open the agreement or restore this browser’s saved draft.",
-    "ALREADY_APPLIED": "You already have a pending proposal for this brief. Open My Work to view it."
+    "ALREADY_APPLIED": "You already have a pending proposal for this brief. Open My Work to view it.",
+    "BACKEND_NOT_CONFIGURED": "Collaboration services are not connected yet. Please return after they launch."
   },
   "commerce": {
     "eyebrow": "A marketplace for outcomes",
@@ -897,5 +898,9 @@
     "inviteFailed": "The brief is published, but the invitation was not delivered. Share its link with the partner.",
     "briefStatus": "Brief status",
     "savedRules": "The draft retains its original verification rules. You can keep them or choose manual approval. Create a new brief to design different automatic rules."
+  },
+  "deployment": {
+    "preview": "Website preview",
+    "pending": "Collaboration features are not open yet. Browsing is available."
   }
 }
