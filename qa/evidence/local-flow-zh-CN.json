@@ -1,73 +1,73 @@
 {
   "network": "LOCAL_TEST_ONLY",
-  "escrow": "0xd073ccea70095cDf18d1D495c015232e721B8EEB",
-  "publicId": "a4d202f1-71d8-4c8e-8729-f00f0c957bcc",
+  "escrow": "0xb2dfbA671A9fd12Fa5e67F64A229291fE545b954",
+  "publicId": "5d991f95-fce4-453b-a497-c9ce6745dd87",
   "workerReceived": "1000000",
   "history": [
     {
       "sequence": 2,
-      "txHash": "0x97abaad7bad22dbae1be35788582dd3b425b433465a555e577f820badfc8692e",
-      "manifestHash": "0xef3a26fa0f6d0ab1bb139080f3cbb60cc4a0a5debf9d814b7b5c200698683a2e"
+      "txHash": "0x37ecc53603ec6aa3dd116cc1dd6c579abe0002632976aeb452dd3f4c92c18cf9",
+      "manifestHash": "0x2642f57bdc57d160b280d1c838a8ae15b6fc64b644f189f94d7d5bc75e868523"
     },
     {
       "sequence": 1,
-      "txHash": "0x1ba0f3e974706dd9b90f80be561d6e5263de7883bab7a3672e129da8b483ac48",
-      "manifestHash": "0x857a4fc9031c8beca4d17c63d492503331c361dd99ce242cdab5ad8d2cb65117"
+      "txHash": "0x7c75469bebac6b72318f36b8b7ebda380cf0a5909aa2962bb5a2b6e842280c9a",
+      "manifestHash": "0x24a2d9f114ef043c90a25ccda674f23a38053424456384d27969f37a4e82d7f1"
     }
   ],
   "events": [
     {
       "name": "Completed",
-      "txHash": "0x1532e414e5c8907ed9ffa30d74f1bba33c7cc8b89d5c519a4691316a7f2df7ea",
-      "block": 2731,
+      "txHash": "0x6bfe33345572d3993aa8c4dfbb6498643bbc57dd35314894788a03e08c3db9a1",
+      "block": 3646,
       "logIndex": 6
     },
     {
       "name": "MilestoneSettled",
-      "txHash": "0x1532e414e5c8907ed9ffa30d74f1bba33c7cc8b89d5c519a4691316a7f2df7ea",
-      "block": 2731,
+      "txHash": "0x6bfe33345572d3993aa8c4dfbb6498643bbc57dd35314894788a03e08c3db9a1",
+      "block": 3646,
       "logIndex": 4
     },
     {
       "name": "VerificationRecorded",
-      "txHash": "0x1532e414e5c8907ed9ffa30d74f1bba33c7cc8b89d5c519a4691316a7f2df7ea",
-      "block": 2731,
+      "txHash": "0x6bfe33345572d3993aa8c4dfbb6498643bbc57dd35314894788a03e08c3db9a1",
+      "block": 3646,
       "logIndex": 1
     },
     {
       "name": "Submitted",
-      "txHash": "0x97abaad7bad22dbae1be35788582dd3b425b433465a555e577f820badfc8692e",
-      "block": 2726,
+      "txHash": "0x37ecc53603ec6aa3dd116cc1dd6c579abe0002632976aeb452dd3f4c92c18cf9",
+      "block": 3641,
       "logIndex": 0
     },
     {
       "name": "RevisionRequested",
-      "txHash": "0x507f4f6503cebf6399ee305a8032dd199babf73ce95df328cd3976ea393c1d94",
-      "block": 2720,
+      "txHash": "0xc5f4b302867f19fc60c4abf9e2bf5828c02507d20ed99ddd76e4fce89b1f3170",
+      "block": 3635,
       "logIndex": 2
     },
     {
       "name": "VerificationRecorded",
-      "txHash": "0x507f4f6503cebf6399ee305a8032dd199babf73ce95df328cd3976ea393c1d94",
-      "block": 2720,
+      "txHash": "0xc5f4b302867f19fc60c4abf9e2bf5828c02507d20ed99ddd76e4fce89b1f3170",
+      "block": 3635,
       "logIndex": 1
     },
     {
       "name": "Submitted",
-      "txHash": "0x1ba0f3e974706dd9b90f80be561d6e5263de7883bab7a3672e129da8b483ac48",
-      "block": 2715,
+      "txHash": "0x7c75469bebac6b72318f36b8b7ebda380cf0a5909aa2962bb5a2b6e842280c9a",
+      "block": 3630,
       "logIndex": 0
     },
     {
       "name": "Accepted",
-      "txHash": "0xa231c17c83f69063506bfd3942349cf22a24fc0e9115ec46b2360af3a630d14a",
-      "block": 2713,
+      "txHash": "0x56f737ab85224eb7ab0d8b19013b6832f1c2ff7af8b434b66dbde7473768f3b6",
+      "block": 3628,
       "logIndex": 0
     },
     {
       "name": "Funded",
-      "txHash": "0x0be187434ca63a55989bb3f698ce84ba4f92e0936d18c0971999d1d0b9361898",
-      "block": 2709,
+      "txHash": "0xcb3e8640d109a1fe22b50c067e9fef69d9254dae7ede76dce8049eda56a69917",
+      "block": 3624,
       "logIndex": 1
     }
   ]

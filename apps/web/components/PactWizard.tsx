@@ -9,7 +9,7 @@ import {
   verificationPolicySchema,
   type VerificationPolicy,
 } from "@pactflow/verifier/policy";
-import { useI18n, evidenceTypeLabel } from "../lib/i18n";
+import { useI18n, evidenceTypeLabel, type MessageKey } from "../lib/i18n";
 import {
   post,
   SignInCard,
@@ -43,6 +43,9 @@ export function PactWizard() {
   const { t, locale } = useI18n();
   const [suggesting, setSuggesting] = useState<number>();
   const [suggestions, setSuggestions] = useState<Record<number, string[]>>({});
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<"title" | "outcome", MessageKey>>
+  >({});
   const { user } = useSession();
   const capabilities = useData<{ ai: boolean }>(
     "verification-capabilities",
@@ -156,8 +159,6 @@ export function PactWizard() {
                     ],
           });
   const validStep = () => {
-    if (step === 0)
-      return title.trim().length >= 5 && outcome.trim().length >= 20;
     if (step === 1)
       return deliveries.every((d) => d.title.trim() && d.criteria.trim());
     if (step === 2) {
@@ -189,6 +190,21 @@ export function PactWizard() {
   };
   const next = () => {
     setError(undefined);
+    if (step === 0) {
+      const issues: typeof fieldErrors = {};
+      if (!title.trim()) issues.title = "v2.titleRequired";
+      else if (title.trim().length > 160) issues.title = "v2.titleTooLong";
+      if (!outcome.trim()) issues.outcome = "v2.outcomeRequired";
+      else if (outcome.trim().length > 12000)
+        issues.outcome = "v2.outcomeTooLong";
+      setFieldErrors(issues);
+      if (issues.title || issues.outcome) {
+        document
+          .getElementById(issues.title ? "pact-title" : "pact-outcome")
+          ?.focus();
+        return;
+      }
+    }
     try {
       if (!validStep()) throw new Error(t("v2.validation"));
       setStep((s) => s + 1);
@@ -219,8 +235,8 @@ export function PactWizard() {
       const total = milestones.reduce((n, m) => n + BigInt(m.amount), 0n);
       const spec = {
         version: 2,
-        title,
-        outcome,
+        title: title.trim(),
+        outcome: outcome.trim(),
         context,
         skills: skills
           .split(",")
@@ -370,19 +386,55 @@ export function PactWizard() {
                 <label>
                   {t("v2.title")}
                   <input
+                    id="pact-title"
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      setFieldErrors((current) => ({
+                        ...current,
+                        title: undefined,
+                      }));
+                    }}
+                    aria-invalid={!!fieldErrors.title}
+                    aria-describedby={
+                      fieldErrors.title ? "pact-title-error" : undefined
+                    }
                     required
                   />
                 </label>
+                {fieldErrors.title && (
+                  <p id="pact-title-error" className="field-error" role="alert">
+                    {t(fieldErrors.title)}
+                  </p>
+                )}
                 <label>
                   {t("v2.outcome")}
                   <textarea
+                    id="pact-outcome"
                     value={outcome}
-                    onChange={(e) => setOutcome(e.target.value)}
+                    onChange={(e) => {
+                      setOutcome(e.target.value);
+                      setFieldErrors((current) => ({
+                        ...current,
+                        outcome: undefined,
+                      }));
+                    }}
+                    aria-invalid={!!fieldErrors.outcome}
+                    aria-describedby={
+                      fieldErrors.outcome ? "pact-outcome-error" : undefined
+                    }
                     required
                   />
                 </label>
+                {fieldErrors.outcome && (
+                  <p
+                    id="pact-outcome-error"
+                    className="field-error"
+                    role="alert"
+                  >
+                    {t(fieldErrors.outcome)}
+                  </p>
+                )}
                 <label>
                   {t("v2.context")}
                   <textarea

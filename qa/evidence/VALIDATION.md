@@ -27,3 +27,14 @@ See `qa/PRODUCTION_AUDIT.md` for the public service/deployment blockers. CI prov
 - Google browser account-name/refresh/logout tests use an explicitly mocked provider. Real Google OAuth login remains BLOCKED until `GOOGLE_CLIENT_ID` and its authorized origin are configured. Guest wallet signatures and all collaboration transactions use the actual local chain.
 
 Earlier account failures (active-cache deletion) and one index-lag assertion were corrected and rechecked; the final full run has zero failures. Startup build/dev conflicts were resolved, the old local databases were retained, and normal API termination now closes database resources. Unchanged contract evidence remains the prior 2026-10-04 run. No public chain transaction or external deployment is claimed.
+
+## Creation outcome validation fix — 2026-10-09
+
+The first V2 creation step incorrectly imposed undocumented minima of five title characters and twenty outcome characters, while the API requires nonempty text with maxima of 160/12,000. Short Chinese text was therefore rejected before any request or wallet transaction. The form now matches the API, trims submitted title/outcome, and shows translated field errors with invalid/described-by attributes and focuses the first invalid field.
+
+- Web typecheck, changed-file lint/format and diff checks: PASS; 731 matching bilingual keys. Optimized local production build: PASS; preview restarted with the fix.
+- Signed full English/desktop and Chinese/mobile collaboration tests: **2/2 PASS**. Chinese test creates a Pact with the four-character title `合作测试` and short outcome, then completes failure, revision, payment, disclosure and privacy checks on the local chain.
+- New field-validation regression tests: **2/2 PASS** in the final run (4.2s). Empty/whitespace, title/outcome maximum lengths, focus, translated errors, short text progression, and automated WCAG checks are covered at 1440px English and 390px Chinese.
+- Two earlier regression-test runs had locator failures (a global empty alert and implicit textarea label text after React rerender). The final tests scope alerts to the wizard and identify editable fields by their accessible role/name. No application-code changes followed the successful full collaboration run.
+
+The earlier 16-case account/product baseline is unchanged; this fix reran the two affected full collaboration cases and added the two field regressions. Real Google/provider/public-deployment gates remain as recorded above. No public chain transactions were sent.

@@ -14,3 +14,5 @@
 No new public Monad deployment or transfers were performed. Existing V1 deployment receipts remain in `docs/TESTNET.md`. `.local` generated keys and valueless Anvil tokens are development-only. P1 remains behind P0 runtime acceptance.
 
 2026-10-09: separate optional Google accounts from required wallet ownership verification; add guest nicknames and protected-page login dialog; redesign the compact top-right account menu and separate logout from disconnect; add responsive network-filter spacing. Google origin/token/nonce/session checks and migration are implemented. Sixteen browser cases pass, including eight new account cases; actual Google OAuth setup remains pending a project client ID.
+
+2026-10-09: fix the first creation step rejecting filled short Chinese text. Remove the undocumented five-character title and twenty-character outcome minimums; align with V2 API nonempty limits (160/12,000), trim submitted text, and associate translated errors with their fields and focus the first invalid field. Retain payment and protocol constraints. Add desktop English/mobile Chinese regressions and exercise short Chinese content in the full signed collaboration flow.

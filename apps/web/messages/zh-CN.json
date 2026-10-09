@@ -739,7 +739,11 @@
     "useSuggestions": "使用这些建议",
     "aiUnavailable": "AI 建议暂不可用。请手动填写验收标准，仍可继续创建。",
     "adapterUnavailable": "此创建流程尚未配置",
-    "aiSemantic": "AI 语义与 JSON 确定性检查"
+    "aiSemantic": "AI 语义与 JSON 确定性检查",
+    "titleRequired": "请填写合作标题。",
+    "outcomeRequired": "请填写合作目标。",
+    "titleTooLong": "合作标题不能超过 160 个字符。",
+    "outcomeTooLong": "合作目标不能超过 12,000 个字符。"
   },
   "evidenceTypes": {
     "JSON": "JSON 数据",

@@ -739,7 +739,11 @@
     "useSuggestions": "Use these suggestions",
     "aiUnavailable": "AI suggestions are unavailable. Enter your criteria manually and continue.",
     "adapterUnavailable": "Not configured in this creation flow",
-    "aiSemantic": "AI + deterministic JSON checks"
+    "aiSemantic": "AI + deterministic JSON checks",
+    "titleRequired": "Enter a collaboration title.",
+    "outcomeRequired": "Describe the outcome you want.",
+    "titleTooLong": "The title must be no more than 160 characters.",
+    "outcomeTooLong": "The outcome must be no more than 12,000 characters."
   },
   "evidenceTypes": {
     "JSON": "JSON",

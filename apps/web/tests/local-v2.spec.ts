@@ -35,10 +35,16 @@ for (const [locale, width] of [
       console.log("Wallet sessions ready");
       await cp
         .getByLabel(m.v2.title, { exact: true })
-        .fill(`Local V2 ${locale} ${Date.now()}`);
+        .fill(
+          locale === "zh-CN" ? "合作测试" : `Local V2 ${locale} ${Date.now()}`,
+        );
       await cp
         .getByLabel(m.v2.outcome, { exact: true })
-        .fill("Deliver validated JSON that demonstrates the approved outcome.");
+        .fill(
+          locale === "zh-CN"
+            ? "交付通过验收的 JSON"
+            : "Deliver validated JSON that demonstrates the approved outcome.",
+        );
       await cp.getByRole("button", { name: m.v2.next, exact: true }).click();
       await cp
         .getByLabel(`${m.v2.deliverable} 1`, { exact: true })
