@@ -61,7 +61,11 @@ function DataState({
     <div className="empty-state">{t("marketplace.loading")}</div>
   ) : error ? (
     <div role="alert" className="empty-state">
-      {t("marketplace.unavailable")}
+      {t(
+        error instanceof Error && error.message === "BACKEND_NOT_CONFIGURED"
+          ? "productErrors.BACKEND_NOT_CONFIGURED"
+          : "marketplace.unavailable",
+      )}
     </div>
   ) : empty ? (
     <div className="empty-state">{t("marketplace.empty")}</div>
