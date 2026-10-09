@@ -67,6 +67,11 @@ export function SiteHeader() {
           <Link className="button" href="/jobs/new">
             {t("marketplace.post")}
           </Link>
+          {path === "/app" && (
+            <Link className="button secondary" href="/discover">
+              {t("marketplace.find")}
+            </Link>
+          )}
           <LanguageMenu />
           <AccountMenu />
         </div>

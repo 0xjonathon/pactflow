@@ -79,6 +79,9 @@ for (const locale of ["en", "zh-CN"] as const) {
         page.getByRole("button", { name: m.auth.logout }),
       ).toHaveCount(0);
       await expect(
+        page.getByRole("button", { name: m.auth.loginGoogle, exact: true }),
+      ).toHaveCount(0);
+      await expect(
         page.getByRole("button", { name: m.wallet.disconnect }),
       ).toBeVisible();
       expect(
@@ -202,7 +205,6 @@ for (const locale of ["en", "zh-CN"] as const) {
     );
     const page = await ctx.newPage();
     try {
-      await login(page, m);
       let googleLoggedIn = false;
       await ctx.route("**/api/v1/auth/google/**", async (route) => {
         const endpoint = new URL(route.request().url()).pathname
@@ -239,9 +241,9 @@ for (const locale of ["en", "zh-CN"] as const) {
         }),
       );
       await page.goto("/network");
-      await page.getByRole("button", { name: m.auth.accountMenu }).click();
       await page
-        .getByRole("button", { name: m.auth.loginGoogle, exact: true })
+        .locator("header")
+        .getByRole("button", { name: m.auth.login, exact: true })
         .click();
       const dialog = page.getByRole("dialog");
       await dialog.getByRole("button", { name: "Mock Google consent" }).click();
@@ -263,10 +265,16 @@ for (const locale of ["en", "zh-CN"] as const) {
         "Ren Google 用户",
       );
       await page.getByRole("button", { name: m.auth.accountMenu }).click();
+      await expect(
+        page.getByRole("button", { name: m.auth.loginGoogle, exact: true }),
+      ).toHaveCount(0);
       await page.getByRole("button", { name: m.auth.logout }).click();
       await page.getByRole("button", { name: m.auth.accountMenu }).click();
       await expect(
         page.getByRole("button", { name: m.auth.logout }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: m.auth.loginGoogle, exact: true }),
       ).toHaveCount(0);
       await expect(
         page.getByRole("button", { name: m.wallet.disconnect }),

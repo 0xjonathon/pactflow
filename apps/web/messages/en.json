@@ -592,7 +592,7 @@
     "money": "Money secured.",
     "work": "Work verified.",
     "earned": "Reputation earned.",
-    "example": "INTERACTIVE EXAMPLE · NOT A LIVE PACT",
+    "example": "Interactive example",
     "sampleTitle": "Website redesign",
     "live": "Live network proof",
     "unavailable": "Unavailable",
@@ -777,7 +777,10 @@
     "dueAfterPrevious": "This submission deadline must be later than the previous milestone deadline.",
     "reviewHoursInvalid": "Enter a review period greater than zero and at most 720 hours, equivalent to at least one second.",
     "revisionsInvalid": "Enter a whole number from 0 to 10 for allowed revisions.",
-    "verifierNotConfigured": "Automated verification is not configured. Select manual review or ask the operator to configure a verifier."
+    "verifierNotConfigured": "Automated verification is not configured. Select manual review or ask the operator to configure a verifier.",
+    "pauseExample": "Pause interactive example",
+    "resumeExample": "Play interactive example",
+    "infrastructureTitle": "Bring verifiable collaboration to every delivery."
   },
   "evidenceTypes": {
     "JSON": "JSON",

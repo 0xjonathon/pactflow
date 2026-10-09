@@ -1,8 +1,7 @@
 "use client";
 import Link from "next/link";
-import { CreationPaths } from "./WorkJourney";
 import { BrandLink } from "./BrandLink";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n, type MessageKey } from "../lib/i18n";
 import { useData, ErrorMessage, rawAmount } from "../lib/product";
 import { getExplorerAddressUrl, getExplorerTxUrl } from "@pactflow/chain";
@@ -71,7 +70,6 @@ export function ActivityPage() {
   }>("activity", `/activity?page=${page}`);
   return (
     <main className="shell">
-      <p className="eyebrow">{t("v2.networkName")}</p>
       <h1>{t("v2.activity")}</h1>
       <p>{t("v2.counts")}</p>
       <ErrorMessage error={data.error} />
@@ -246,6 +244,53 @@ export function ReceiptPage({ id }: { id: string }) {
 export function HomePage() {
   const { t } = useI18n();
   const [stage, setStage] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const home = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const update = () => {
+      clearInterval(timer);
+      if (preference.matches) setStage(5);
+      else if (!paused) {
+        timer = setInterval(() => {
+          if (!document.hidden) setStage((current) => (current + 1) % 6);
+        }, 2600);
+      }
+    };
+    update();
+    preference.addEventListener("change", update);
+    return () => {
+      clearInterval(timer);
+      preference.removeEventListener("change", update);
+    };
+  }, [paused]);
+  useEffect(() => {
+    const root = home.current;
+    if (!root || !window.IntersectionObserver) return;
+    const scenes = root.querySelectorAll<HTMLElement>(".home-scene");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.setAttribute("data-visible", "true");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -24px 0px" },
+    );
+    scenes.forEach((scene) => {
+      if (scene.getBoundingClientRect().top < window.innerHeight)
+        scene.dataset.visible = "true";
+      observer.observe(scene);
+    });
+    root.classList.add("motion-ready");
+    return () => {
+      observer.disconnect();
+      root.classList.remove("motion-ready");
+    };
+  }, []);
   const loop = [
     "agree",
     "secure",
@@ -267,8 +312,16 @@ export function HomePage() {
     "/activity",
   );
   return (
-    <main className="shell v2-home">
-      <section className="v2-hero">
+    <main
+      className="shell v2-home"
+      ref={home}
+      onFocusCapture={(event) => {
+        (event.target as HTMLElement)
+          .closest(".home-scene")
+          ?.setAttribute("data-visible", "true");
+      }}
+    >
+      <section className="v2-hero home-scene" data-visible="true">
         <div>
           <p className="eyebrow">{t("v2.eyebrow")}</p>
           <h1>
@@ -285,17 +338,19 @@ export function HomePage() {
               {t("marketplace.find")}
             </Link>
           </div>
-          <p className="small">
-            {t("journey.difference")}{" "}
-            <Link href="/how-it-works">{t("journey.how")} ↗</Link>
-          </p>
-          <CreationPaths />
-          <p className="small">
-            {t("v2.money")} {t("v2.work")} {t("v2.earned")}
-          </p>
         </div>
         <div className="pact-preview">
-          <p className="eyebrow">{t("v2.example")}</p>
+          <div className="preview-heading">
+            <p className="eyebrow">{t("v2.example")}</p>
+            <button
+              className="preview-playback secondary"
+              aria-label={t(paused ? "v2.resumeExample" : "v2.pauseExample")}
+              aria-pressed={paused}
+              onClick={() => setPaused((value) => !value)}
+            >
+              <span aria-hidden="true">{paused ? "▶" : "Ⅱ"}</span>
+            </button>
+          </div>
           <h3>{t("v2.sampleTitle")}</h3>
           <strong className="large-amount">
             500 <small>USDC</small>
@@ -306,20 +361,22 @@ export function HomePage() {
           </div>
           <ol className="preview-loop">
             {loop.map((key, i) => (
-              <li key={key} className={i <= stage ? "done" : ""}>
-                {i < stage ? "✓" : i === stage ? "●" : "○"} {t(`v2.${key}`)}
+              <li
+                key={key}
+                className={i < stage ? "done" : i === stage ? "current" : ""}
+                aria-current={i === stage ? "step" : undefined}
+              >
+                <span className="preview-step-mark" aria-hidden="true">
+                  {i < stage ? "✓" : i + 1}
+                </span>
+                <span>{t(`v2.${key}`)}</span>
+                <span className="preview-step-line" aria-hidden="true" />
               </li>
             ))}
           </ol>
-          <button
-            className="secondary"
-            onClick={() => setStage((s) => (s + 1) % 6)}
-          >
-            {t(`v2.${loop[stage]}`)} →
-          </button>
         </div>
       </section>
-      <section className="v2-section">
+      <section className="v2-section home-scene">
         <h2>{t("v2.live")}</h2>
         <div className="live-stats">
           {(["created", "completed", "volume", "events"] as const).map(
@@ -352,79 +409,44 @@ export function HomePage() {
         </p>
         <ErrorMessage error={stats.error} />
         {activity.data?.items.length ? (
-          <ActivityList items={activity.data.items.slice(0, 8)} />
+          <ActivityList items={activity.data.items.slice(0, 4)} />
         ) : (
           <p className="small">{t("v2.noActivity")}</p>
         )}
         <Link href="/activity">{t("v2.activity")} ↗</Link>
       </section>
-      <section className="v2-section">
-        <h2>{t("v2.loop")}</h2>
-        <div className="trust-loop">
-          {loop.map((key, i) => (
-            <div key={key}>
-              <span className="mono small">0{i + 1}</span>
-              <h3>{t(`v2.${key}`)}</h3>
-              <p>{t(`v2.${key}Desc`)}</p>
-            </div>
-          ))}
+      <section className="v2-section home-scene proof-scene">
+        <h2>{t("v2.infrastructureTitle")}</h2>
+        <div className="proof-features">
+          {(["verification", "humans", "developer"] as const).map(
+            (key, index) => (
+              <article key={key}>
+                <span className="feature-symbol" aria-hidden="true">
+                  {["✓", "◎", "↗"][index]}
+                </span>
+                <h3>{t(`v2.${key}Title`)}</h3>
+                <p>{t(`v2.${key}Body`)}</p>
+              </article>
+            ),
+          )}
         </div>
+        <Link className="button secondary" href="/proof">
+          {t("v2.proof")} ↗
+        </Link>
       </section>
-      <section className="v2-section editorial">
-        <div>
-          <p className="eyebrow">04 · {t("v2.agreement")}</p>
-          <h2>{t("v2.sampleTitle")}</h2>
-          <p>{t("v2.termsFrozen")}</p>
-        </div>
-        <div className="card">
-          <p>{t("v2.example")}</p>
-          <div className="row">
-            <span>{t("v2.funds")}</span>
-            <strong>500 USDC</strong>
-          </div>
-          <div className="row">
-            <span>{t("v2.verification")}</span>
-            <strong>{t("v2.hybrid")}</strong>
-          </div>
-          <div className="row">
-            <span>{t("v2.revisionLimit")}</span>
-            <strong>2</strong>
-          </div>
-          <p>{t("v2.privacy")}</p>
-        </div>
-      </section>
-      {(
-        ["verification", "reputation", "humans", "monad", "developer"] as const
-      ).map((key, i) => (
-        <section className="v2-section editorial" key={key}>
-          <div>
-            <p className="eyebrow">0{i + 5}</p>
-            <h2>{t(`v2.${key}Title`)}</h2>
-          </div>
+      {(["reputation", "monad"] as const).map((key) => (
+        <section className="v2-section editorial home-scene" key={key}>
+          <h2>{t(`v2.${key}Title`)}</h2>
           <div>
             <p>{t(`v2.${key}Body`)}</p>
-            <Link
-              href={
-                key === "reputation"
-                  ? "/reputation"
-                  : key === "humans"
-                    ? "/network"
-                    : "/proof"
-              }
-            >
-              {t(
-                key === "reputation"
-                  ? "marketplace.reputation"
-                  : key === "humans"
-                    ? "v2.network"
-                    : "v2.proof",
-              )}{" "}
+            <Link href={key === "reputation" ? "/reputation" : "/proof"}>
+              {t(key === "reputation" ? "marketplace.reputation" : "v2.proof")}{" "}
               ↗
             </Link>
           </div>
         </section>
       ))}
-      <section className="v2-section final-cta">
+      <section className="v2-section final-cta home-scene">
         <h2>
           {t("v2.hero1")}
           <br />

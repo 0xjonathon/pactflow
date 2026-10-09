@@ -397,7 +397,6 @@ export function DiscoverPage() {
   return (
     <main className="shell">
       <PageTitle
-        eyebrow={t("commerce.brief")}
         title={t("marketplace.discover")}
         subtitle={t("commerce.discoverHelp")}
       />
@@ -405,9 +404,8 @@ export function DiscoverPage() {
         <Link className="button" href="/jobs/new">
           {t("marketplace.post")}
         </Link>
-        <Link href="/how-it-works">{t("journey.how")} ↗</Link>
       </div>
-      <div className="filter-bar">
+      <div className="filter-bar discover-filters">
         <input
           aria-label={t("marketplace.search")}
           placeholder={t("marketplace.search")}
@@ -467,48 +465,42 @@ export function DiscoverPage() {
             </option>
           ))}
         </select>
+        <input
+          type="number"
+          min="0"
+          placeholder={t("marketplace.minBudget")}
+          aria-label={t("marketplace.minBudget")}
+          value={filters.minBudget}
+          onChange={(e) => set("minBudget", e.target.value)}
+        />
+        <input
+          type="number"
+          min="0"
+          placeholder={t("marketplace.maxBudget")}
+          aria-label={t("marketplace.maxBudget")}
+          value={filters.maxBudget}
+          onChange={(e) => set("maxBudget", e.target.value)}
+        />
+        <label>
+          {t("marketplace.byDate")}
+          <input
+            type="date"
+            value={filters.deadline}
+            onChange={(e) => set("deadline", e.target.value)}
+          />
+        </label>
+        <select
+          aria-label={t("marketplace.funding")}
+          value={filters.funding}
+          onChange={(e) => set("funding", e.target.value)}
+        >
+          <option value="">
+            {t("marketplace.funding")} · {t("marketplace.all")}
+          </option>
+          <option value="locked">{t("marketplace.locked")}</option>
+          <option value="unfunded">{t("marketplace.notLocked")}</option>
+        </select>
       </div>
-      <details className="filter-details">
-        <summary>
-          {t("marketplace.budget")} · {t("marketplace.deadline")} ·{" "}
-          {t("marketplace.funding")}
-        </summary>
-        <div className="filter-bar">
-          <input
-            type="number"
-            min="0"
-            placeholder={t("marketplace.minBudget")}
-            aria-label={t("marketplace.minBudget")}
-            value={filters.minBudget}
-            onChange={(e) => set("minBudget", e.target.value)}
-          />
-          <input
-            type="number"
-            min="0"
-            placeholder={t("marketplace.maxBudget")}
-            aria-label={t("marketplace.maxBudget")}
-            value={filters.maxBudget}
-            onChange={(e) => set("maxBudget", e.target.value)}
-          />
-          <label>
-            {t("marketplace.byDate")}
-            <input
-              type="date"
-              value={filters.deadline}
-              onChange={(e) => set("deadline", e.target.value)}
-            />
-          </label>
-          <select
-            aria-label={t("marketplace.funding")}
-            value={filters.funding}
-            onChange={(e) => set("funding", e.target.value)}
-          >
-            <option value="">{t("marketplace.all")}</option>
-            <option value="locked">{t("marketplace.locked")}</option>
-            <option value="unfunded">{t("marketplace.notLocked")}</option>
-          </select>
-        </div>
-      </details>
       <div className="results-toolbar">
         <p className="small">
           {t("marketplace.result", { count: data.data?.total ?? 0 })}
@@ -1226,7 +1218,6 @@ export function DashboardPage() {
         <Link className="button secondary" href="/discover">
           {t("marketplace.find")}
         </Link>
-        <Link href="/pacts/new">{t("journey.direct")} ↗</Link>
       </div>
       <div className="tabs" aria-label={t("marketplace.work")}>
         {["client", "worker"].map((k) => (

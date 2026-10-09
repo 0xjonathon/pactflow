@@ -54,12 +54,10 @@ export function HowItWorksPage() {
   return (
     <main className="shell">
       <div className="page-title">
-        <p className="eyebrow">PactFlow</p>
         <h1>{t("journey.how")}</h1>
         <p>{t("journey.difference")}</p>
       </div>
       <CreationPaths />
-      <WorkJourney step={0} />
       <section className="journey-explanations">
         {(
           [

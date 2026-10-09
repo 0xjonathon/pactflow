@@ -250,7 +250,7 @@
     "testnet": "Monad 测试网演示",
     "hero": "让好的合作，\n有一个安心的开始。",
     "subtitle": "找到合适的伙伴，约定交付成果，提前托管款项。按约定验收后结算，让每一次合作都更有保障。",
-    "find": "发现合作机会",
+    "find": "发现合作",
     "recommended": "正在寻找合作伙伴",
     "explanation": "产品流程演示 · 非真实交易",
     "locked": "资金已锁定",
@@ -592,7 +592,7 @@
     "money": "资金已锁定。",
     "work": "交付已验证。",
     "earned": "信誉已积累。",
-    "example": "交互示例 · 非真实合作记录",
+    "example": "交互示例",
     "sampleTitle": "网站改版",
     "live": "真实网络证明",
     "unavailable": "暂不可用",
@@ -777,7 +777,10 @@
     "dueAfterPrevious": "此提交期限必须晚于上一个里程碑的提交期限。",
     "reviewHoursInvalid": "验收时限须大于 0、最多 720 小时，且换算后至少为 1 秒。",
     "revisionsInvalid": "修订次数必须是 0–10 的整数。",
-    "verifierNotConfigured": "尚未配置自动验证服务，请选择手动验收或联系部署方配置验证器。"
+    "verifierNotConfigured": "尚未配置自动验证服务，请选择手动验收或联系部署方配置验证器。",
+    "pauseExample": "暂停交互示例",
+    "resumeExample": "播放交互示例",
+    "infrastructureTitle": "让可信协作融入每一次交付。"
   },
   "evidenceTypes": {
     "JSON": "JSON 数据",

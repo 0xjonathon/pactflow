@@ -99,7 +99,7 @@ export function AccountMenu() {
             >
               {t("auth.logout")}
             </button>
-          ) : (
+          ) : !user ? (
             <button
               className="secondary"
               onClick={() => {
@@ -109,7 +109,7 @@ export function AccountMenu() {
             >
               {t("auth.loginGoogle")}
             </button>
-          )}
+          ) : null}
         </div>
       )}
     </div>
