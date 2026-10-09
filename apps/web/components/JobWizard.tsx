@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import type { VerificationPolicy } from "@pactflow/verifier/policy";
 import { useI18n, type MessageKey } from "../lib/i18n";
 import {
   post,
@@ -26,14 +27,18 @@ function localDate(d: Date) {
 export function JobWizardPage() {
   const { t, locale } = useI18n();
   const { user } = useSession();
-  const [invite, setInvite] = useState("");
-  useEffect(
-    () =>
-      setInvite(
-        new URLSearchParams(window.location.search).get("invite") ?? "",
-      ),
-    [],
+  const capabilities = useData<{ ai: { available: boolean } }>(
+    "verification-capabilities",
+    "/verification/capabilities",
   );
+  const [draftId, setDraftId] = useState("");
+  const [requestId] = useState(() => crypto.randomUUID());
+  const [invite, setInvite] = useState("");
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setInvite(query.get("invite") ?? "");
+    setDraftId(query.get("draft") ?? "");
+  }, []);
   const inviteProfile = useData<Person>(
     `invite-${invite}`,
     `/users/${invite}`,
@@ -45,7 +50,8 @@ export function JobWizardPage() {
     [error, setError] = useState<unknown>(),
     [busy, setBusy] = useState(false),
     [published, setPublished] = useState<Job>(),
-    [createdId, setCreatedId] = useState("");
+    [createdId, setCreatedId] = useState(""),
+    [inviteError, setInviteError] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [f, setF] = useState(() => ({
     title: "",
@@ -55,7 +61,7 @@ export function JobWizardPage() {
     skills: "",
     budget: "300",
     deadline: localDate(new Date(Date.now() + 14 * 86400_000)),
-    verificationMode: "Hybrid",
+    verificationMode: "ClientOnly",
     clientDeposit: "15",
     url: "",
     text: "",
@@ -68,6 +74,56 @@ export function JobWizardPage() {
     { title: t("form.defaultMilestone"), amount: "300", dueAt: f.deadline },
   ]);
   const [advanced, setAdvanced] = useState(false);
+  const [restoredPolicy, setRestoredPolicy] = useState<VerificationPolicy>();
+  const draft = useData<Job>(
+    `saved-draft-${draftId}`,
+    `/jobs/${draftId}`,
+    !!draftId && !!user,
+  );
+  const loadedDraft = useRef("");
+  useEffect(() => {
+    if (!draft.data || loadedDraft.current === draft.data.id) return;
+    loadedDraft.current = draft.data.id;
+    if (draft.data.status !== "DRAFT") {
+      setPublished(draft.data);
+      return;
+    }
+    const value = draft.data;
+    const p = value.policy as VerificationPolicy | null;
+    if (p) setRestoredPolicy(p);
+    const http = p?.rules.find((rule) => rule.type === "HTTP_STATUS");
+    const selector = p?.rules.find((rule) => rule.type === "DOM_SELECTOR");
+    const text = p?.rules.find((rule) => rule.type === "DOM_TEXT");
+    const performance = p?.rules.find((rule) => rule.type === "LIGHTHOUSE");
+    const semantic = p?.rules.find((rule) => rule.type === "LLM_RUBRIC");
+    setCreatedId(value.id);
+    setF((current) => ({
+      ...current,
+      title: value.title,
+      description: value.description,
+      requirements: value.requirements,
+      category: value.category,
+      skills: value.skills.join(", "),
+      budget: value.budget,
+      deadline: localDate(new Date(value.deadline)),
+      verificationMode: value.verificationMode,
+      clientDeposit: value.clientDeposit,
+      url: http?.type === "HTTP_STATUS" ? (http.target ?? "") : "",
+      text: text?.type === "DOM_TEXT" ? text.contains : "",
+      selector: selector?.type === "DOM_SELECTOR" ? selector.selector : "",
+      performance: String(
+        performance?.type === "LIGHTHOUSE" ? performance.minimum : 0,
+      ),
+      semantic: semantic?.type === "LLM_RUBRIC" ? semantic.rubric : "",
+      minScore: String(p?.minScore ?? 80),
+    }));
+    setMilestones(
+      value.milestones.map((m) => ({
+        ...m,
+        dueAt: localDate(new Date(m.dueAt)),
+      })),
+    );
+  }, [draft.data]);
   useEffect(() => {
     if (issues.length)
       requestAnimationFrame(() =>
@@ -81,10 +137,18 @@ export function JobWizardPage() {
   const clear = (field: string) => {
     setIssues((v) => v.filter((i) => i.field !== field));
     setError(null);
-    setCreatedId("");
   };
   const change = (key: keyof typeof f, value: string) => {
     clear(key);
+    if (key === "verificationMode") {
+      setRestoredPolicy((p) =>
+        value === "ClientOnly"
+          ? undefined
+          : p
+            ? { ...p, mode: value === "Hybrid" ? "HYBRID" : "AI_ONLY" }
+            : undefined,
+      );
+    }
     setF((v) => ({
       ...v,
       [key]: value,
@@ -113,6 +177,7 @@ export function JobWizardPage() {
       {["description", "requirements", "semantic"].includes(key) ? (
         <textarea
           aria-label={t(label)}
+          disabled={key === "semantic" && !capabilities.data?.ai.available}
           value={f[key]}
           aria-invalid={!!problem(key)}
           aria-describedby={problem(key) ? `error-${key}` : undefined}
@@ -147,7 +212,8 @@ export function JobWizardPage() {
   const policy = () =>
     f.verificationMode === "ClientOnly"
       ? null
-      : buildVerificationPolicy({
+      : (restoredPolicy ??
+        buildVerificationPolicy({
           preset: "WEBSITE",
           mode: f.verificationMode === "Hybrid" ? "HYBRID" : "AI_ONLY",
           url: f.url,
@@ -156,9 +222,23 @@ export function JobWizardPage() {
           minPerformance: Number(f.performance),
           semanticRequirement: f.semantic,
           minScore: Number(f.minScore),
-        });
+        }));
   const validate = (only?: number) => {
-    const found = validateBrief(f, milestones, only);
+    const found = validateBrief(
+      {
+        ...f,
+        verificationMode: restoredPolicy ? "ClientOnly" : f.verificationMode,
+        aiAvailable: capabilities.data?.ai.available ?? false,
+      },
+      milestones,
+      only,
+    );
+    if (
+      restoredPolicy?.semanticVerificationEnabled &&
+      !capabilities.data?.ai.available &&
+      (only === undefined || only === 3)
+    )
+      found.push({ field: "semantic", code: "aiUnavailable", step: 3 });
     if (found.length) {
       setIssues(found);
       setStep(found[0].step);
@@ -178,31 +258,33 @@ export function JobWizardPage() {
     }
     setBusy(true);
     try {
-      let id = createdId;
-      if (!id) {
-        const created = await post<Job>("/jobs", {
-          title: f.title.trim(),
-          description: f.description.trim(),
-          requirements: f.requirements,
-          category: f.category,
-          skills: f.skills
-            .split(/[,，]/)
-            .map((v) => v.trim())
-            .filter(Boolean),
-          budget: f.budget,
-          deadline: new Date(f.deadline).toISOString(),
-          milestones: milestones.map((m) => ({
-            ...m,
-            title: m.title.trim(),
-            dueAt: new Date(m.dueAt).toISOString(),
-          })),
-          verificationMode: f.verificationMode,
-          policy: policy(),
-          clientDeposit: f.clientDeposit,
-          workerDeposit: "0",
-        });
-        id = created.id;
-        setCreatedId(id);
+      const created = await post<Job>("/jobs", {
+        requestId: createdId || requestId,
+        title: f.title.trim(),
+        description: f.description.trim(),
+        requirements: f.requirements,
+        category: f.category,
+        skills: f.skills
+          .split(/[,，]/)
+          .map((v) => v.trim())
+          .filter(Boolean),
+        budget: f.budget,
+        deadline: new Date(f.deadline).toISOString(),
+        milestones: milestones.map((m) => ({
+          ...m,
+          title: m.title.trim(),
+          dueAt: new Date(m.dueAt).toISOString(),
+        })),
+        verificationMode: f.verificationMode,
+        policy: policy(),
+        clientDeposit: f.clientDeposit,
+        workerDeposit: "0",
+      });
+      const id = created.id;
+      setCreatedId(id);
+      if (created.status !== "DRAFT") {
+        setPublished(created);
+        return;
       }
       const live = await post<Job>(`/jobs/${id}/publish`);
       setPublished(live);
@@ -212,7 +294,7 @@ export function JobWizardPage() {
             handle: inviteProfile.data.handle,
           });
         } catch {
-          /* Publishing succeeded; invitation can be sent separately. */
+          setInviteError(true);
         }
     } catch (e) {
       if (e instanceof ApiError && e.issues.length) {
@@ -258,6 +340,12 @@ export function JobWizardPage() {
         <h1>{t("marketplace.post")}</h1>
         <p>{t("jobs.matchingHelp")}</p>
       </div>
+      <p className="notice">{t("journey.publishFree")}</p>
+      <p className="small">
+        <Link href="/how-it-works">{t("journey.how")} ↗</Link> ·{" "}
+        <Link href="/pacts/new">{t("journey.direct")}</Link>
+      </p>
+      <ErrorMessage error={draft.error} />
       {inviteProfile.data && (
         <p className="notice">
           {t("jobs.inviting", { name: inviteProfile.data.displayName })}
@@ -288,8 +376,17 @@ export function JobWizardPage() {
         <section className="card">
           <span className="pill">✓ {t("jobs.published")}</span>
           <h2>{published.title}</h2>
+          <p>{t("journey.waitApplications")}</p>
+          {inviteError && (
+            <p className="notice" role="alert">
+              {t("journey.inviteFailed")}
+            </p>
+          )}
           <Link className="button" href={`/jobs/${published.id}`}>
             {t("common.details")} ↗
+          </Link>
+          <Link className="button secondary" href="/app">
+            {t("marketplace.work")}
           </Link>
         </section>
       ) : (
@@ -300,6 +397,10 @@ export function JobWizardPage() {
           onSubmit={submit}
         >
           <p className="small">{t("form.stepCount", { step })}</p>
+          {draftId && draft.isLoading && (
+            <p role="status">{t("journey.draftLoading")}</p>
+          )}
+          {createdId && <p className="small">{t("journey.resumeHelp")}</p>}
           <h2>{t(`jobs.step${names[step - 1]}` as MessageKey)}</h2>
           {issues.length > 0 && (
             <div className="validation-summary" role="alert">
@@ -432,11 +533,13 @@ export function JobWizardPage() {
             </>
           ) : step === 3 ? (
             <>
+              <p>{t("journey.manualDefault")}</p>
               <div className="choice-grid">
                 {["ClientOnly", "AIOnly", "Hybrid"].map((m) => (
                   <button
                     type="button"
                     key={m}
+                    aria-label={methodLabel(m, t)}
                     aria-pressed={f.verificationMode === m}
                     className={
                       f.verificationMode === m ? "choice selected" : "choice"
@@ -444,7 +547,9 @@ export function JobWizardPage() {
                     onClick={() => change("verificationMode", m)}
                   >
                     {methodLabel(m, t)}
-                    {m === "Hybrid" && <small>{t("jobs.recommended")}</small>}
+                    {m === "ClientOnly" && (
+                      <small>{t("jobs.recommended")}</small>
+                    )}
                   </button>
                 ))}
               </div>
@@ -457,7 +562,14 @@ export function JobWizardPage() {
                       : "form.aiMode",
                 )}
               </p>
-              {f.verificationMode !== "ClientOnly" && (
+              {f.verificationMode !== "ClientOnly" && restoredPolicy && (
+                <div className="verification-builder">
+                  <p className="notice">{t("journey.savedRules")}</p>
+                  <pre>{JSON.stringify(restoredPolicy, null, 2)}</pre>
+                  {feedback("semantic")}
+                </div>
+              )}
+              {f.verificationMode !== "ClientOnly" && !restoredPolicy && (
                 <div className="verification-builder">
                   <p>✓ {t("jobs.reachable")}</p>
                   {field("url", "jobs.expectedUrl", "url")}
@@ -486,6 +598,9 @@ export function JobWizardPage() {
                   </label>
                   {field("performance", "jobs.performance", "number")}
                   {field("semantic", "jobs.semantic")}
+                  {!capabilities.data?.ai.available && (
+                    <p className="small">{t("journey.aiUnavailable")}</p>
+                  )}
                   {field("minScore", "verification.minScore", "number")}
                   <button
                     type="button"
@@ -572,7 +687,13 @@ export function JobWizardPage() {
                 {t("onboarding.back")}
               </button>
             )}
-            <button disabled={busy || (step === 5 && !user)}>
+            <button
+              disabled={
+                busy ||
+                (step === 5 && !user) ||
+                (!!draftId && (draft.isLoading || !!draft.error))
+              }
+            >
               {busy
                 ? t("form.publishing")
                 : t(step === 5 ? "jobs.publish" : "onboarding.continue")}

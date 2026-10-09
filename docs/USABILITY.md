@@ -16,4 +16,6 @@ Then ask the participant to draft a job and explain the collaboration deposit. R
 
 Record language, device, answers verbatim with consent, task completion, points of confusion, and any assistance. Do not invent responses. Automated Playwright checks verify UI behavior; they do not establish human comprehension.
 
-Known testnet limitation: settlement requires a wallet and test tokens. Account setup introduces the wallet after role and profile selection. The deployed v1 protocol cannot resubmit an already submitted milestone; the UI must explain this rather than offer a nonfunctional action.
+Product-owner feedback on 2026-10-09 identified an undiscoverable publication route, confusion between a brief and an agreement, and unexplained settlement/resolver wallets. The implemented entry/role/terms corrections are recorded in `product/JOURNEY_REVIEW.md` and the user guide `docs/PRODUCT_JOURNEY.md`. This is actual owner feedback, not a substitute for the independent study above.
+
+Current account access offers Google or guest choice, then mandatory wallet ownership verification before protected actions. Profile/role onboarding is optional. Local V2 supports revisions; public V1 retains its original submission limitations. Real Google configuration, testnet funds and public deployment acceptance remain external gates.

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { CreationPaths } from "./WorkJourney";
 import { useState } from "react";
 import { useI18n, type MessageKey } from "../lib/i18n";
 import { useData, ErrorMessage, rawAmount } from "../lib/product";
@@ -276,13 +277,18 @@ export function HomePage() {
           </h1>
           <p>{t("v2.subtitle")}</p>
           <div className="actions">
-            <Link className="button" href="/pacts/new">
-              {t("v2.create")}
+            <Link className="button" href="/jobs/new">
+              {t("marketplace.post")}
             </Link>
-            <Link className="button secondary" href="/activity">
-              {t("v2.explore")}
+            <Link className="button secondary" href="/discover">
+              {t("marketplace.find")}
             </Link>
           </div>
+          <p className="small">
+            {t("journey.difference")}{" "}
+            <Link href="/how-it-works">{t("journey.how")} ↗</Link>
+          </p>
+          <CreationPaths />
           <p className="small">
             {t("v2.money")} {t("v2.work")} {t("v2.earned")}
           </p>
@@ -424,12 +430,14 @@ export function HomePage() {
           {t("v2.hero2")}
         </h2>
         <p>{t("v2.tagline")}</p>
-        <Link className="button" href="/pacts/new">
-          {t("v2.create")}
+        <Link className="button" href="/jobs/new">
+          {t("marketplace.post")}
         </Link>
       </section>
       <footer className="small">
-        PactFlow · {t("v2.networkName")} ·{" "}
+        <Link href="/how-it-works">{t("journey.how")}</Link> ·{" "}
+        <Link href="/pacts/new">{t("journey.direct")}</Link> · PactFlow ·{" "}
+        {t("v2.networkName")} ·{" "}
         {process.env.NEXT_PUBLIC_LOCAL_CHAIN === "true"
           ? t("v2.localChain")
           : "Monad Testnet"}

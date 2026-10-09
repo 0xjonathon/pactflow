@@ -9,3 +9,5 @@ PactWizard creates, saves the hash-matching spec and policies, checks balance/al
 V2 factory/registry configuration and settlement token are mandatory. Public wallet and provider smoke is blocked; local signing tests are not public Monad evidence.
 
 Required acceptance: actual user flow, English/Chinese, keyboard and mobile, empty/loading/failure states. Executed gates and evidence are recorded in `qa/PRODUCTION_AUDIT.md`; full source requirements are in `product/MASTER_DIRECTIVE.md`.
+
+The direct route is explicitly for parties who already know each other. Unknown counterparties start at Publish Brief → proposals → selection → CollaborationDraft. That draft automatically binds the selected verified worker; requester confirmation exposes resolver, acceptance deadline, review duration, revision limit, exact escrow total and fixed delivery/verification terms. Both direct and matched flows use the same payment/role validation limits; no silent replacement of expired dates or fallback signatures. The capability response is `{ai:{available}}`, not a boolean.

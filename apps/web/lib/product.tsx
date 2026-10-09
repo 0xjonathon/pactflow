@@ -8,6 +8,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import type { PactStatus } from "@pactflow/sdk";
 import { useAccount, useSignMessage, useDisconnect } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useI18n, type MessageKey } from "./i18n";
@@ -62,7 +63,7 @@ export type Job = {
   demo: boolean;
   escrowAddress?: string;
   fundsLocked: boolean;
-  pactStatus?: string;
+  pactStatus?: PactStatus;
   worker?: Person;
   client: Person;
 };

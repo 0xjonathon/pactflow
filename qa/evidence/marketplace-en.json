@@ -1,19 +1,25 @@
 {
   "network": "LOCAL_TEST_ONLY",
-  "escrow": "0x7321C67a9d89677e09Dc81c4B72722c9Ff659553",
-  "publicId": "33c82694-9cae-40f6-a510-9ac6ddab89ec",
+  "escrow": "0xa9F5D0F93aac4B4ba14B8870c3ac52F8A5d43A1C",
+  "restoredSameEscrow": true,
+  "confirmedTerms": {
+    "worker": "0x48403355a343d693774385e2468a8f1b363e51a5",
+    "reviewPeriod": "43200",
+    "maxRevisions": 3
+  },
+  "publicId": "811b5009-fcbd-4676-9d5c-5839dd94b642",
   "review": [
     {
-      "id": "97397409-4da2-4edc-ab53-59a47b21b663",
-      "escrowAddress": "0x7321c67a9d89677e09dc81c4b72722c9ff659553",
+      "id": "82280764-de1e-4e00-917d-8d73f8d7aae1",
+      "escrowAddress": "0xa9f5d0f93aac4b4ba14b8870c3ac52f8a5d43a1c",
       "actor": "0x9cc3d73bd95a767bbb229aa83049b86869a32cbe",
       "type": "ManualReviewConfirmed",
       "payload": {
-        "id": "e6691c2c-ee6c-40a3-a174-39c93f895275",
-        "txHash": "0x8881813064f0c73f7ed066fbcec306437221c8eb32793ef57a4638ea33c2509b",
-        "reportHash": "0x98dfb8b35d9be1ae9487edbb56e056122e5d327e93eec8d9e0839e3a9292028c"
+        "id": "6c2be808-5186-49a8-a9f3-95e11d8d4c22",
+        "txHash": "0xfa8b9333b20a07c76ef136a435281ee2051679adbc4966344847b5c61a37893f",
+        "reportHash": "0x44572097bfa7720c9941ad80f31ef3ed4b1275710d8be435facc12b409857c6a"
       },
-      "createdAt": "2026-10-09T05:35:25.732Z"
+      "createdAt": "2026-10-09T06:42:08.032Z"
     }
   ]
 }

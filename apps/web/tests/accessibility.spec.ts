@@ -26,6 +26,8 @@ for (const locale of ["en", "zh-CN"] as const) {
         for (const path of [
           "/",
           "/discover",
+          "/how-it-works",
+          "/jobs/new",
           "/network",
           "/activity",
           "/proof",

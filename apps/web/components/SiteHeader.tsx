@@ -9,10 +9,11 @@ export function SiteHeader() {
   const path = usePathname();
   const links = [
     ["/discover", "marketplace.discover"],
-    ["/app", "v2.pacts"],
+    ["/app", "marketplace.work"],
     ["/network", "v2.network"],
     ["/reputation", "marketplace.reputation"],
     ["/activity", "v2.activity"],
+    ["/how-it-works", "journey.how"],
   ];
   return (
     <header className="site-header">
@@ -46,22 +47,34 @@ export function SiteHeader() {
               </Link>
             ))}
             <Link
+              href="/jobs/new"
+              onClick={(e) =>
+                e.currentTarget.closest("details")?.removeAttribute("open")
+              }
+            >
+              {t("marketplace.post")}
+            </Link>
+            <Link
               href="/pacts/new"
               onClick={(e) =>
                 e.currentTarget.closest("details")?.removeAttribute("open")
               }
             >
-              {t("v2.create")}
+              {t("journey.direct")}
             </Link>
           </div>
         </details>
         <div className="nav-actions">
-          <Link className="button" href="/pacts/new">
-            {t("v2.create")}
+          <Link className="button" href="/jobs/new">
+            {t("marketplace.post")}
           </Link>
           <LanguageMenu />
           <AccountMenu />
         </div>
+      </div>
+      <div className="mobile-work-actions">
+        <Link href="/jobs/new">{t("marketplace.post")} ↗</Link>
+        <Link href="/discover">{t("marketplace.find")}</Link>
       </div>
     </header>
   );

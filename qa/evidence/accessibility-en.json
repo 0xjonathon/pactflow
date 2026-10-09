@@ -10,6 +10,16 @@
     "violations": []
   },
   {
+    "path": "/how-it-works",
+    "width": 1440,
+    "violations": []
+  },
+  {
+    "path": "/jobs/new",
+    "width": 1440,
+    "violations": []
+  },
+  {
     "path": "/network",
     "width": 1440,
     "violations": []
@@ -35,12 +45,12 @@
     "violations": []
   },
   {
-    "path": "/pacts/0xF2Ff903dB114EBFeB115ab6c9c2E025f7977d372",
+    "path": "/pacts/0x01BF6719eb1E2dC909B8233B3dC830E8B3C5F2ae",
     "width": 1440,
     "violations": []
   },
   {
-    "path": "/p/89da2c56-04c2-4197-88a6-bf12d0c53ee4",
+    "path": "/p/4e39115b-c195-44e0-9f63-bf0160299130",
     "width": 1440,
     "violations": []
   },
@@ -55,6 +65,16 @@
     "violations": []
   },
   {
+    "path": "/how-it-works",
+    "width": 390,
+    "violations": []
+  },
+  {
+    "path": "/jobs/new",
+    "width": 390,
+    "violations": []
+  },
+  {
     "path": "/network",
     "width": 390,
     "violations": []
@@ -80,12 +100,12 @@
     "violations": []
   },
   {
-    "path": "/pacts/0xF2Ff903dB114EBFeB115ab6c9c2E025f7977d372",
+    "path": "/pacts/0x01BF6719eb1E2dC909B8233B3dC830E8B3C5F2ae",
     "width": 390,
     "violations": []
   },
   {
-    "path": "/p/89da2c56-04c2-4197-88a6-bf12d0c53ee4",
+    "path": "/p/4e39115b-c195-44e0-9f63-bf0160299130",
     "width": 390,
     "violations": []
   }

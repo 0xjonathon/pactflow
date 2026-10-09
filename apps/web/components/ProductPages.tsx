@@ -1,4 +1,5 @@
 "use client";
+import type { PactStatus } from "@pactflow/sdk";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -25,6 +26,8 @@ import {
   type Metrics,
 } from "../lib/product";
 import { getExplorerTxUrl, getExplorerAddressUrl } from "@pactflow/chain";
+import { workAction } from "../lib/work-actions";
+import { WorkJourney } from "./WorkJourney";
 const categories = ["Development", "Design", "Research", "Data", "Content"];
 function PageTitle({
   eyebrow,
@@ -362,6 +365,7 @@ export function DiscoverPage() {
     deadline: "",
     funding: "",
     sort: "newest",
+    status: "OPEN",
     page: "1",
   });
   useEffect(() => {
@@ -394,6 +398,12 @@ export function DiscoverPage() {
         title={t("marketplace.discover")}
         subtitle={t("commerce.discoverHelp")}
       />
+      <div className="actions discover-actions">
+        <Link className="button" href="/jobs/new">
+          {t("marketplace.post")}
+        </Link>
+        <Link href="/how-it-works">{t("journey.how")} ↗</Link>
+      </div>
       <div className="filter-bar">
         <input
           aria-label={t("marketplace.search")}
@@ -428,6 +438,15 @@ export function DiscoverPage() {
               {methodLabel(m, t)}
             </option>
           ))}
+        </select>
+        <select
+          aria-label={t("journey.briefStatus")}
+          value={filters.status}
+          onChange={(e) => set("status", e.target.value)}
+        >
+          <option value="OPEN">{t("jobs.open")}</option>
+          <option value="MATCHED">{t("jobs.matched")}</option>
+          <option value="ALL">{t("marketplace.all")}</option>
         </select>
         <select
           aria-label={t("marketplace.sort")}
@@ -492,7 +511,7 @@ export function DiscoverPage() {
           {t("marketplace.result", { count: data.data?.total ?? 0 })}
         </p>
         {Object.entries(filters).some(
-          ([k, v]) => v && k !== "page" && k !== "sort",
+          ([k, v]) => v && k !== "page" && k !== "sort" && k !== "status",
         ) && (
           <button
             className="text-button"
@@ -506,6 +525,7 @@ export function DiscoverPage() {
                 deadline: "",
                 funding: "",
                 sort: "newest",
+                status: "OPEN",
                 page: "1",
               });
               window.history.replaceState(null, "", "/discover");
@@ -581,11 +601,29 @@ export function JobDetailPage({ id }: { id: string }) {
     );
   const own = user?.id === job.clientId;
   const mine = applications.data?.find((p) => p.workerId === user?.id);
+  const expired =
+    Date.parse(job.deadline) <= Date.now() ||
+    Date.parse(job.milestones[0]?.dueAt) <= Date.now();
+  const accepting = job.status === "OPEN" && !expired;
   return (
     <main className="shell">
       <Link className="back-link" href="/discover">
         ← {t("marketplace.discover")}
       </Link>
+      <WorkJourney
+        step={job.escrowAddress ? 2 : job.status === "MATCHED" ? 2 : 1}
+      />
+      <p className="notice">
+        {t(
+          job.status === "CLOSED"
+            ? "journey.briefClosed"
+            : expired && !job.escrowAddress
+              ? "journey.briefExpired"
+              : job.status === "MATCHED"
+                ? "journey.matchedHelp"
+                : "journey.noFundsOnSelection",
+        )}
+      </p>
       <div className="detail-grid">
         <div>
           <PageTitle
@@ -652,6 +690,7 @@ export function JobDetailPage({ id }: { id: string }) {
           {own && (
             <section className="card">
               <h2>{t("jobs.proposals")}</h2>
+              <ErrorMessage error={applications.error} />
               {!applications.data?.length && (
                 <p className="small">{t("jobs.proposalsEmpty")}</p>
               )}
@@ -671,7 +710,7 @@ export function JobDetailPage({ id }: { id: string }) {
                     {p.estimatedDays} {t("jobs.days")} ·{" "}
                     {t(`jobs.${p.status.toLowerCase()}` as MessageKey)}
                   </p>
-                  {p.status === "PENDING" && job.status === "OPEN" && (
+                  {p.status === "PENDING" && accepting && (
                     <button
                       disabled={busy}
                       onClick={() =>
@@ -729,13 +768,16 @@ export function JobDetailPage({ id }: { id: string }) {
               </Link>
             ) : !user ? (
               <SignInCard />
-            ) : !own && job.status === "OPEN" && !mine ? (
+            ) : !own && accepting && (!mine || mine.status === "WITHDRAWN") ? (
               <button className="block" onClick={() => setApplying(true)}>
                 {t("jobs.apply")}
               </button>
             ) : mine ? (
               <>
                 <p>{t(`jobs.${mine.status.toLowerCase()}` as MessageKey)}</p>
+                {mine.status === "ACCEPTED" && (
+                  <p className="small">{t("journey.selectedWaiting")}</p>
+                )}
                 {mine.status === "PENDING" && (
                   <button
                     className="secondary"
@@ -748,14 +790,21 @@ export function JobDetailPage({ id }: { id: string }) {
                 )}
               </>
             ) : null}
-            {own && job.status === "OPEN" && (
-              <button
-                className="secondary block"
-                onClick={() => act(() => post(`/jobs/${id}/close`))}
-              >
-                {t("jobs.close")}
-              </button>
+            {own && job.status === "DRAFT" && (
+              <Link className="button block" href={`/jobs/new?draft=${job.id}`}>
+                {t("journey.resumeDraft")}
+              </Link>
             )}
+            {own &&
+              !job.escrowAddress &&
+              ["OPEN", "MATCHED"].includes(job.status) && (
+                <button
+                  className="secondary block"
+                  onClick={() => act(() => post(`/jobs/${id}/close`))}
+                >
+                  {t("jobs.close")}
+                </button>
+              )}
             {applying && (
               <form
                 onSubmit={(e) => {
@@ -774,7 +823,8 @@ export function JobDetailPage({ id }: { id: string }) {
                 <label>
                   {t("jobs.message")}
                   <textarea
-                    minLength={20}
+                    minLength={1}
+                    maxLength={5000}
                     required
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -1134,96 +1184,111 @@ export function DashboardPage() {
   const data = useData<{
     client: Job[];
     worker: Job[];
+    proposals: Proposal[];
     pacts: Array<{
       address: string;
       client: string;
-      snapshot: { status: string; totalBudget: string };
+      snapshot: { status: PactStatus; totalBudget: string };
     }>;
   }>("work", "/me/work", !!user);
+  useEffect(() => {
+    if (user?.intent === "WORK") setTab("worker");
+  }, [user?.intent]);
   if (!user)
     return (
       <main className="shell">
-        <PageTitle title={t("dashboard.title")} />
+        <PageTitle title={t("marketplace.work")} />
         <SignInCard />
       </main>
     );
-  const values = tab === "client" ? data.data?.client : data.data?.worker;
+  const requester = tab === "client";
+  const values = requester ? data.data?.client : data.data?.worker;
+  const direct = data.data?.pacts.filter(
+    (p) =>
+      requester === (p.client.toLowerCase() === user.wallet?.toLowerCase()) &&
+      !values?.some(
+        (j) => j.escrowAddress?.toLowerCase() === p.address.toLowerCase(),
+      ),
+  );
   return (
     <main className="shell">
-      <PageTitle title={t("dashboard.title")} subtitle={user.displayName} />
-      <div className="tabs">
+      <PageTitle
+        title={t("marketplace.work")}
+        subtitle={t("journey.difference")}
+      />
+      <div className="actions">
+        <Link className="button" href="/jobs/new">
+          {t("marketplace.post")}
+        </Link>
+        <Link className="button secondary" href="/discover">
+          {t("marketplace.find")}
+        </Link>
+        <Link href="/pacts/new">{t("journey.direct")} ↗</Link>
+      </div>
+      <div className="tabs" aria-label={t("marketplace.work")}>
         {["client", "worker"].map((k) => (
           <button
             key={k}
+            aria-pressed={tab === k}
             className={tab === k ? "selected" : ""}
             onClick={() => setTab(k)}
           >
-            {t(`dashboard.${k}` as MessageKey)}
+            {t(k === "client" ? "journey.myBriefs" : "journey.myApplications")}
           </button>
         ))}
       </div>
-      <DataState
-        loading={data.isLoading}
-        error={data.error}
-        empty={!values?.length && !data.data?.pacts.length}
-      />
+      <DataState loading={data.isLoading} error={data.error} empty={false} />
+      {!data.isLoading && !data.error && !values?.length && (
+        <section className="empty-state">
+          <p>
+            {t(
+              requester ? "journey.emptyRequests" : "journey.emptyApplications",
+            )}
+          </p>
+          <Link className="button" href={requester ? "/jobs/new" : "/discover"}>
+            {t(requester ? "marketplace.post" : "marketplace.find")}
+          </Link>
+        </section>
+      )}
       <div className="job-grid">
-        {values?.map((j) => (
-          <article className="job-card" key={j.id}>
-            <span className="pill neutral">
-              {j.pactStatus ??
-                t(`jobs.${j.status.toLowerCase()}` as MessageKey)}
-            </span>
-            <h3>{j.title}</h3>
-            <strong>{amount(j.budget)} USDC</strong>
-            <p className="small">{t("dashboard.next")}</p>
-            <Link
-              className="button block"
-              href={
-                j.escrowAddress ? `/pacts/${j.escrowAddress}` : `/jobs/${j.id}`
-              }
-            >
-              {j.pactStatus === "Submitted"
-                ? t(tab === "client" ? "dashboard.review" : "dashboard.wait")
-                : j.pactStatus === "Active"
-                  ? t(tab === "worker" ? "dashboard.submit" : "dashboard.wait")
-                  : j.status === "MATCHED" && !j.escrowAddress
-                    ? t("jobs.reviewDraft")
-                    : j.pactStatus === "Created"
-                      ? t(
-                          tab === "client"
-                            ? "dashboard.fund"
-                            : "dashboard.wait",
-                        )
-                      : j.pactStatus === "Funded"
-                        ? t(
-                            tab === "worker"
-                              ? "dashboard.accept"
-                              : "dashboard.wait",
-                          )
-                        : t("jobs.openWorkspace")}
-            </Link>
-          </article>
-        ))}
+        {values?.map((j) => {
+          const proposal = data.data?.proposals.find((p) => p.jobId === j.id);
+          const action = workAction(j, requester, proposal);
+          return (
+            <article className="job-card" key={j.id}>
+              <span className="pill neutral">
+                {j.pactStatus
+                  ? pactStatusLabel(j.pactStatus, t)
+                  : t(
+                      `jobs.${(requester ? j.status : (proposal?.status ?? j.status)).toLowerCase()}` as MessageKey,
+                    )}
+              </span>
+              <h3>{j.title}</h3>
+              <strong>{amount(j.budget)} USDC</strong>
+              <p className="small">{t("dashboard.next")}</p>
+              <Link className="button block" href={action.href}>
+                {t(action.label)}
+              </Link>
+            </article>
+          );
+        })}
       </div>
-      {data.data?.pacts
-        .filter(
-          (p) =>
-            (tab === "client"
-              ? p.client === user.wallet
-              : p.client !== user.wallet) &&
-            !values?.some((j) => j.escrowAddress === p.address),
-        )
-        .map((p) => (
-          <div className="card row" key={p.address}>
-            <span>
-              {p.snapshot?.status} · {rawAmount(p.snapshot?.totalBudget)} USDC
-            </span>
-            <Link className="button secondary" href={`/pacts/${p.address}`}>
-              {t("jobs.openWorkspace")}
-            </Link>
-          </div>
-        ))}
+      {!!direct?.length && (
+        <section className="section">
+          <h2>{t("journey.myAgreements")}</h2>
+          {direct.map((p) => (
+            <div className="card row" key={p.address}>
+              <span>
+                {pactStatusLabel(p.snapshot?.status, t)} ·{" "}
+                {rawAmount(p.snapshot?.totalBudget)} USDC
+              </span>
+              <Link className="button secondary" href={`/pacts/${p.address}`}>
+                {t("jobs.openWorkspace")}
+              </Link>
+            </div>
+          ))}
+        </section>
+      )}
     </main>
   );
 }

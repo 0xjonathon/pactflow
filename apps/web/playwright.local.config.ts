@@ -3,6 +3,7 @@ export default defineConfig({
   testDir: "./tests",
   testMatch: [
     "account.spec.ts",
+    "journey.spec.ts",
     "pact-wizard.spec.ts",
     "local-v2.spec.ts",
     "marketplace-v2.spec.ts",

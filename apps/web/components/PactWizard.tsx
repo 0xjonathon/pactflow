@@ -27,6 +27,7 @@ import {
 } from "../features/transaction/useTransactionFlow";
 import { buildVerificationPolicy } from "../lib/verification";
 import { NetworkGuard } from "./WalletBar";
+import { WorkJourney } from "./WorkJourney";
 import {
   validatePactPayment,
   type PaymentField,
@@ -90,7 +91,7 @@ export function PactWizard() {
   >({});
   const [focusField, setFocusField] = useState<PactField>();
   const { user } = useSession();
-  const capabilities = useData<{ ai: boolean }>(
+  const capabilities = useData<{ ai: { available: boolean } }>(
     "verification-capabilities",
     "/verification/capabilities",
   );
@@ -240,6 +241,12 @@ export function PactWizard() {
     if (step === 1)
       return deliveries.every((d) => d.title.trim() && d.criteria.trim());
     if (step === 2) {
+      if (
+        method !== "ClientOnly" &&
+        preset === "SEMANTIC" &&
+        !capabilities.data?.ai.available
+      )
+        throw new Error("AI_CRITERIA_UNAVAILABLE");
       policy();
       return true;
     }
@@ -295,6 +302,13 @@ export function PactWizard() {
         (!isAddress(verifier) || verifier === zeroAddress)
       )
         throw new Error("VERIFIER_NOT_CONFIGURED");
+      if (
+        !escrow &&
+        method !== "ClientOnly" &&
+        preset === "SEMANTIC" &&
+        !capabilities.data?.ai.available
+      )
+        throw new Error("AI_CRITERIA_UNAVAILABLE");
       const policies = deliveries.map((_, index) => policy(index));
       const p = policies[0];
       const milestones = deliveries.map((d) => ({
@@ -424,6 +438,11 @@ export function PactWizard() {
     <main className="shell narrow">
       <p className="eyebrow">{t("v2.networkName")}</p>
       <h1>{t("v2.create")}</h1>
+      <p className="notice">
+        {t("journey.directHelp")}{" "}
+        <Link href="/jobs/new">{t("marketplace.post")} ↗</Link>
+      </p>
+      <WorkJourney step={2} />
       {sdk.addresses.version !== 2 && (
         <p className="notice">{t("v2.v2NotConfigured")}</p>
       )}
@@ -687,10 +706,10 @@ export function PactWizard() {
                         <option value="GITHUB_CI">GitHub / CI</option>
                         <option
                           value="SEMANTIC"
-                          disabled={!capabilities.data?.ai}
+                          disabled={!capabilities.data?.ai.available}
                         >
                           {t("v2.aiSemantic")}
-                          {!capabilities.data?.ai
+                          {!capabilities.data?.ai.available
                             ? ` · ${t("v2.unavailable")}`
                             : ""}
                         </option>

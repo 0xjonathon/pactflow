@@ -82,6 +82,8 @@ export function AccountMenu() {
           <WalletBar />
           {user && (
             <div className="account-links">
+              <Link href="/app">{t("marketplace.work")}</Link>
+              <Link href="/jobs/new">{t("marketplace.post")}</Link>
               <Link href={`/u/${user.handle}`}>{t("marketplace.profile")}</Link>
               <Link href="/onboarding">{t("profile.edit")}</Link>
               <Link href="/notifications">{t("notifications.title")}</Link>

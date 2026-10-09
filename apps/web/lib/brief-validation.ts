@@ -10,6 +10,8 @@ export type BriefFields = {
   url: string;
   performance: string;
   minScore: string;
+  semantic?: string;
+  aiAvailable?: boolean;
 };
 export type BriefIssue = { field: string; code: string; step: number };
 export function validateBrief(
@@ -21,9 +23,9 @@ export function validateBrief(
   const add = (field: string, code: string, n: number) => {
     if (step === undefined || step === n) issues.push({ field, code, step: n });
   };
-  if (f.title.trim().length < 5 || f.title.trim().length > 160)
+  if (!f.title.trim() || f.title.trim().length > 160)
     add("title", "titleLength", 1);
-  if (f.description.trim().length < 20 || f.description.trim().length > 12000)
+  if (!f.description.trim() || f.description.trim().length > 12000)
     add("description", "descriptionLength", 1);
   if (f.requirements.length > 8000)
     add("requirements", "requirementsLength", 1);
@@ -44,6 +46,8 @@ export function validateBrief(
   const end = Date.parse(f.deadline);
   if (!Number.isFinite(end) || end <= Date.now() + 3600_000)
     add("deadline", "futureDeadline", 2);
+  else if (end > Date.now() + 365 * 86400000)
+    add("deadline", "deadlineRange", 2);
   if (milestones.length < 1 || milestones.length > 32)
     add("milestones", "milestoneCount", 2);
   milestones.forEach((m, i) => {
@@ -55,6 +59,8 @@ export function validateBrief(
     if (!Number.isFinite(due) || due <= Date.now() + 3600_000)
       add(`milestones.${i}.dueAt`, "futureDeadline", 2);
     else if (due > end) add(`milestones.${i}.dueAt`, "beforeDeadline", 2);
+    else if (due > Date.now() + 365 * 86400000)
+      add(`milestones.${i}.dueAt`, "deadlineRange", 2);
     else if (i && due <= Date.parse(milestones[i - 1].dueAt))
       add(`milestones.${i}.dueAt`, "orderedDeadlines", 2);
   });
@@ -65,6 +71,8 @@ export function validateBrief(
   )
     add("milestones", "milestoneTotal", 2);
   if (f.verificationMode !== "ClientOnly") {
+    if (f.semantic?.trim() && !f.aiAvailable)
+      add("semantic", "aiUnavailable", 3);
     try {
       const url = new URL(f.url);
       if (

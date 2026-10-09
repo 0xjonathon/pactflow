@@ -30,7 +30,13 @@ for (const locale of ["en", "zh-CN"] as const)
     const next = locale === "en" ? "Continue" : "继续";
     const title = `[Browser Test] ${locale} dashboard ${Date.now()}`;
     try {
-      await c.goto("/jobs/new");
+      await c.goto("/");
+      await c
+        .locator("main")
+        .getByRole("link", { name: m.marketplace.post, exact: true })
+        .first()
+        .click();
+      await c.waitForURL("**/jobs/new");
       await c
         .getByLabel(locale === "en" ? "Project title" : "项目标题", {
           exact: true,
@@ -65,7 +71,7 @@ for (const locale of ["en", "zh-CN"] as const)
       await expect(
         c.getByText(locale === "en" ? "Your brief is live" : "需求已发布"),
       ).toBeVisible();
-      await c.locator("main a.button").click();
+      await c.locator("main a.button").first().click();
       await c.waitForURL(/\/jobs\/[0-9a-f-]+$/);
       await w.goto("/discover");
       await w
@@ -105,6 +111,13 @@ for (const locale of ["en", "zh-CN"] as const)
           .locator("aside")
           .getByText(locale === "en" ? "Pending" : "待处理", { exact: true }),
       ).toBeVisible();
+      await w.goto("/app");
+      await w
+        .getByRole("button", { name: m.journey.myApplications, exact: true })
+        .click();
+      await expect(
+        w.getByRole("heading", { name: title, exact: true }),
+      ).toBeVisible();
       await c.reload();
       await c
         .getByRole("button", {
@@ -131,11 +144,64 @@ for (const locale of ["en", "zh-CN"] as const)
             : "钱包将确认创建合作、代币授权和资金托管。这些是真实测试网交易。",
         ),
       ).toBeVisible();
+      await expect(c.locator(".selected-partner code")).toHaveText(
+        ww.account.address.toLowerCase(),
+      );
+      await expect(
+        c.getByText(m.journey.automaticWallet, { exact: true }),
+      ).toBeVisible();
+      await c.getByLabel(m.v2.reviewPeriod, { exact: true }).fill("12");
+      await c.getByLabel(m.v2.revisionLimit, { exact: true }).fill("3");
       mkdirSync("../../docs/screenshots", { recursive: true });
+      await c.evaluate(() => {
+        document.documentElement.style.scrollBehavior = "auto";
+        window.scrollTo(0, 0);
+      });
       await c.screenshot({
         path: `../../docs/screenshots/draft-${locale}.png`,
         fullPage: true,
       });
+      let recoveredEscrow: string | undefined;
+      if (locale === "en") {
+        let interrupted = false;
+        await c.route("**/api/v1/pacts/*/spec", (route) => {
+          if (route.request().method() === "POST" && !interrupted) {
+            interrupted = true;
+            return route.fulfill({
+              status: 503,
+              contentType: "application/json",
+              body: JSON.stringify({ code: "SERVICE_UNAVAILABLE" }),
+            });
+          }
+          return route.continue();
+        });
+        await c
+          .getByRole("button", {
+            name: m.jobs.createCollaboration,
+            exact: true,
+          })
+          .click();
+        await expect(c.locator("main .notice.error")).toBeVisible({
+          timeout: 60000,
+        });
+        recoveredEscrow = await c.evaluate(
+          () =>
+            localStorage.getItem(
+              `pactflow_job_escrow_${location.pathname.split("/")[2]}`,
+            )!,
+        );
+        expect(recoveredEscrow).toMatch(/^0x[0-9a-fA-F]{40}$/);
+        await expect(
+          c.getByLabel(m.v2.reviewPeriod, { exact: true }),
+        ).toBeDisabled();
+        await c.reload();
+        await expect(
+          c.getByLabel(m.v2.reviewPeriod, { exact: true }),
+        ).toHaveValue("12");
+        await expect(
+          c.getByLabel(m.v2.reviewPeriod, { exact: true }),
+        ).toBeDisabled();
+      }
       await c
         .getByRole("button", { name: m.jobs.createCollaboration, exact: true })
         .click();
@@ -144,6 +210,12 @@ for (const locale of ["en", "zh-CN"] as const)
         .click({ timeout: 60000 });
       await c.waitForURL(/\/pacts\/0x[0-9a-fA-F]{40}$/);
       const escrow = c.url().split("/").at(-1)!;
+      if (recoveredEscrow)
+        expect(escrow.toLowerCase()).toBe(recoveredEscrow.toLowerCase());
+      const spec = (await request(`/pacts/${escrow}/spec`, ct)).data.spec;
+      expect(spec.reviewPeriod).toBe("43200");
+      expect(spec.maxRevisions).toBe(3);
+      expect(spec.worker.toLowerCase()).toBe(ww.account.address.toLowerCase());
       await w.goto(`/pacts/${escrow}`);
       await w
         .getByRole("button", { name: m.v2.accept, exact: true })
@@ -259,6 +331,14 @@ for (const locale of ["en", "zh-CN"] as const)
           {
             network: "LOCAL_TEST_ONLY",
             escrow,
+            restoredSameEscrow: recoveredEscrow
+              ? escrow.toLowerCase() === recoveredEscrow.toLowerCase()
+              : null,
+            confirmedTerms: {
+              worker: spec.worker,
+              reviewPeriod: spec.reviewPeriod,
+              maxRevisions: spec.maxRevisions,
+            },
             publicId: share.publicId,
             review: audit.filter(
               (e: { type: string }) => e.type === "ManualReviewConfirmed",

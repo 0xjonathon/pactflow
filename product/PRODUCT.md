@@ -5,7 +5,9 @@ Money secured. Work verified. Reputation earned.
 
 ## Product contract
 
-Agreement → Escrow → Evidence → Verification → Settlement → Reputation.
+Brief → Proposals → Partner selection → Agreement → Escrow → Evidence → Verification → Settlement → Reputation.
+
+An already agreed pair may enter directly at Agreement. Publishing a Brief attracts partners without requiring their wallet and without locking funds. Selection supplies the verified partner wallet automatically; agreement confirmation is a separate funding decision.
 A new participant must be able to understand the agreement, secured amount, required evidence, verification method, revision policy, payment conditions and earned reputation without understanding RPC/ABI/gas.
 
 ## Delivery priority
