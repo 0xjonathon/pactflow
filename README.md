@@ -1,6 +1,22 @@
 # PactFlow 2.0
 
-Agreement → Escrow → Evidence → Verification → Settlement → Reputation.
+PactFlow connects clients and collaborators through escrow, verified delivery, and real reputation, making work and payments more trustworthy.
+
+Publish a brief → Select a partner → Agree on milestones → Secure payment → Verify delivery → Build reputation.
+
+## What you can do
+
+- Publish a work brief, receive applications, and select a partner before creating an agreement. Known partners can create an agreement directly.
+- Confirm milestone amounts, deadlines, acceptance rules, revisions, and participant wallets before locking funds.
+- Submit private evidence, inspect verification reports, revise failed work, and settle accepted milestones through smart contracts.
+- Follow real activity and delivery history in a Work Passport; share a redacted receipt only with both participants' consent.
+- Use English or Chinese on desktop and mobile. Wallet access is required for protected actions; optional Google identity is separate from wallet authority.
+
+See [the product journey](docs/PRODUCT_JOURNEY.md), [hackathon submission copy](docs/HACKATHON_SUBMISSION.md), and [validation evidence](qa/evidence/VALIDATION.md).
+
+![English product journey](qa/evidence/journey-en.png)
+
+## Current status
 
 Independent rebuild on `codex/pactflow-2.0`, preserving the original Git history and working sources. V1 contracts and deployment records remain available; new revision-capable Pacts use separately configured V2 contracts. This project has passed local chain acceptance, but public deployment and production service acceptance remain blocked. See [production audit](qa/PRODUCTION_AUDIT.md).
 
