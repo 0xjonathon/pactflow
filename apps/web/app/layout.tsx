@@ -23,8 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: { siteName: "PactFlow", type: "website" },
     twitter: { card: "summary" },
     description: zh
-      ? "为人与 AI Agent 的协作建立可信基础设施。"
-      : "Trust infrastructure for work between humans and AI agents.",
+      ? "发布需求、找到合作伙伴，通过资金托管与交付验证建立可信的合作记录。"
+      : "Find collaborators, secure milestone payments, verify delivery, and build a verifiable work history.",
   };
 }
 

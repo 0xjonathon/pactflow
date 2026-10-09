@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { CreationPaths } from "./WorkJourney";
+import { BrandLink } from "./BrandLink";
 import { useState } from "react";
 import { useI18n, type MessageKey } from "../lib/i18n";
 import { useData, ErrorMessage, rawAmount } from "../lib/product";
@@ -434,13 +435,16 @@ export function HomePage() {
           {t("marketplace.post")}
         </Link>
       </section>
-      <footer className="small">
-        <Link href="/how-it-works">{t("journey.how")}</Link> ·{" "}
-        <Link href="/pacts/new">{t("journey.direct")}</Link> · PactFlow ·{" "}
-        {t("v2.networkName")} ·{" "}
-        {process.env.NEXT_PUBLIC_LOCAL_CHAIN === "true"
-          ? t("v2.localChain")
-          : "Monad Testnet"}
+      <footer className="small brand-footer">
+        <BrandLink />
+        <div>
+          <Link href="/how-it-works">{t("journey.how")}</Link> ·{" "}
+          <Link href="/pacts/new">{t("journey.direct")}</Link> ·{" "}
+          {t("v2.networkName")} ·{" "}
+          {process.env.NEXT_PUBLIC_LOCAL_CHAIN === "true"
+            ? t("v2.localChain")
+            : "Monad Testnet"}
+        </div>
       </footer>
     </main>
   );

@@ -78,6 +78,7 @@ We plan to start with small contributor tasks in builder communities and improve
 ## Links and assets
 
 - Source repository: https://github.com/0xjonathon/pactflow
+- Project logo: [transparent PNG, 1254 × 1254, under 2 MB](../assets/brand/pactflow-logo.png)
 - Product journey: [guide](PRODUCT_JOURNEY.md)
 - Reproducible setup: [README](../README.md)
 - Demo script: [150-second judge demo](../qa/JUDGE_DEMO.md)
@@ -89,7 +90,7 @@ We plan to start with small contributor tasks in builder communities and improve
 
 ## 报名填写步骤
 
-已登录页面为 https://hackathon.monad.xyz/project?tab=submission 。当前项目名称与一句话介绍已保存；Submission checklist 显示 **0 / 5**，这是五组材料的完成情况，不是只有五个必填字段。页面截止时间为 **2026-10-14 11:59 GMT+8（北京时间上午 11:59）**。
+已登录页面为 https://hackathon.monad.xyz/project?tab=submission 。项目名称与一句话介绍已保存；同日已上传并保存 PactFlow Logo，Submission checklist 显示 **1 / 5**。这是五组材料的完成情况，不是只有五个必填字段。页面截止时间为 **2026-10-14 11:59 GMT+8（北京时间上午 11:59）**。
 
 1. 在 `SUBMISSION` 标签填写下表。用原报名时相同的 Google、GitHub 或 Discord 方式登录；页面明确提示不同登录方式是独立账户。
 2. 选择主赛道。当前菜单提供 `Onchain Finance & Trading`、`Consumer Products & Payments`、`Social, Attention & Culture`、`Trust, Identity & AI Infrastructure`。按当前面向客户与交付方的协作支付流程，建议优先考虑 **Consumer Products & Payments**；这是产品定位建议，具体资格仍以赛事规则为准。
@@ -113,4 +114,4 @@ We plan to start with small contributor tasks in builder communities and improve
 | Product advertisement                      | 否   | 最多 30 秒，赛后推广使用，不影响评审                                                                   |
 | X profile link                             | 否   | 填写真实项目账号，获奖项目可能被提及                                                                   |
 
-主要缺项：主赛道、完整描述/获客策略/仓库链接、Logo、公开 Monad 运行产品、技术演示与 Pitch 两个视频。GitHub 上传不等于完成赛事提交；local-chain prototype 的说明不能替代 Live product 的 Monad 网络要求。上线与视频链接准备好后，再填写可执行的 Judge access instructions。
+主要缺项：主赛道、完整描述/获客策略/仓库链接、公开 Monad 运行产品、技术演示与 Pitch 两个视频。GitHub 上传不等于完成赛事提交；local-chain prototype 的说明不能替代 Live product 的 Monad 网络要求。上线与视频链接准备好后，再填写可执行的 Judge access instructions。

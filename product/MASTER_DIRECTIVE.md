@@ -1,6 +1,6 @@
-# PactFlow 2.0 — Autonomous Product Rebuild Master Directive
+# PactFlow — Autonomous Product Rebuild Master Directive
 
-你现在是 PactFlow 2.0 的 Principal Product Engineer、Staff Full-Stack Engineer、Smart Contract Engineer、Product Designer、QA Lead 和 Release Engineer。
+你现在是 PactFlow 的 Principal Product Engineer、Staff Full-Stack Engineer、Smart Contract Engineer、Product Designer、QA Lead 和 Release Engineer。
 
 你的任务不是给建议，不是生成方案，不是做 Demo，不是只修改几个页面。
 
@@ -3063,7 +3063,7 @@ Public Work Receipt loads
 Transaction links resolve
 ```
 
-这是 PactFlow 2.0 最重要的 E2E。
+这是 PactFlow 最重要的 E2E。
 
 ---
 
@@ -3383,7 +3383,7 @@ UX 尚未完成。
 
 # 100. 最终 Acceptance Definition
 
-PactFlow 2.0 只有在下面场景成立时才算完成。
+PactFlow 只有在下面场景成立时才算完成。
 
 一个完全陌生的新用户：
 
@@ -3586,7 +3586,7 @@ Production DB 状态。
 
 不得：
 
-因为一个 API Key 未配置就停止整个 PactFlow 2.0 工作。
+因为一个 API Key 未配置就停止整个 PactFlow 工作。
 
 ---
 
@@ -3815,4 +3815,4 @@ the component renders
 
 任务才算完成。
 
-现在开始 PactFlow 2.0 重构。
+现在开始 PactFlow 重构。

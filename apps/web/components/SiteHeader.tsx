@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useI18n } from "../lib/i18n";
 import { LanguageMenu } from "./LanguageMenu";
 import { AccountMenu } from "./AccountMenu";
+import { BrandLink } from "./BrandLink";
 export function SiteHeader() {
   const { t } = useI18n();
   const path = usePathname();
@@ -18,9 +19,7 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="nav-shell">
-        <Link className="brand" href="/">
-          PactFlow<span>↗</span>
-        </Link>
+        <BrandLink />
         <nav aria-label={t("marketplace.menu")}>
           {links.map(([href, key]) => (
             <Link

@@ -28,6 +28,7 @@ import {
 import { getExplorerTxUrl, getExplorerAddressUrl } from "@pactflow/chain";
 import { workAction } from "../lib/work-actions";
 import { WorkJourney } from "./WorkJourney";
+import { BrandLink } from "./BrandLink";
 const categories = ["Development", "Design", "Research", "Data", "Content"];
 function PageTitle({
   eyebrow,
@@ -345,9 +346,7 @@ export function LandingPage() {
         </Link>
       </section>
       <footer className="product-footer">
-        <Link className="brand" href="/">
-          PactFlow ↗
-        </Link>
+        <BrandLink />
         <span>{t("commerce.footer")}</span>
         <span>{t("marketplace.testnet")}</span>
       </footer>

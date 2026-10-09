@@ -1,4 +1,6 @@
-# PactFlow 2.0
+<p align="center"><img src="assets/brand/pactflow-logo.png" width="160" alt="PactFlow logo" /></p>
+
+# PactFlow
 
 PactFlow connects clients and collaborators through escrow, verified delivery, and real reputation, making work and payments more trustworthy.
 
@@ -18,7 +20,9 @@ See [the product journey](docs/PRODUCT_JOURNEY.md), [hackathon submission copy](
 
 ## Current status
 
-Independent rebuild on `codex/pactflow-2.0`, preserving the original Git history and working sources. V1 contracts and deployment records remain available; new revision-capable Pacts use separately configured V2 contracts. This project has passed local chain acceptance, but public deployment and production service acceptance remain blocked. See [production audit](qa/PRODUCTION_AUDIT.md).
+V1 contracts and deployment records remain available; new revision-capable Pacts use separately configured V2 contracts. These identifiers describe contract compatibility, not the product name. This project has passed local chain acceptance, but public deployment and production service acceptance remain blocked. See [production audit](qa/PRODUCTION_AUDIT.md).
+
+[Download the transparent PactFlow logo](assets/brand/pactflow-logo.png) for the hackathon submission (1254 × 1254 PNG, under 2 MB).
 
 ## Local acceptance
 
