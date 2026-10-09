@@ -4,12 +4,13 @@ import {
   useContext,
   useEffect,
   useState,
+  useCallback,
+  useRef,
   type ReactNode,
 } from "react";
-import { useAccount, useSignMessage } from "wagmi";
-import { useQuery } from "@tanstack/react-query";
+import { useAccount, useSignMessage, useDisconnect } from "wagmi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useI18n, type MessageKey } from "./i18n";
-import { WalletBar } from "../components/WalletBar";
 export const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
 export type Metrics = {
   passRate?: number | null;
@@ -128,59 +129,147 @@ export function analytics(
 ) {
   void post("/analytics", { event, properties }).catch(() => {});
 }
+export type AccountIdentity = { name: string; provider: "google" };
 const SessionContext = createContext<{
   user: Person | null;
-  signIn: () => Promise<void>;
-  signOut: () => void;
+  account: AccountIdentity | null;
+  guestName: string;
+  ready: boolean;
+  authOpen: boolean;
+  openAuth: () => void;
+  closeAuth: () => void;
+  authenticate: (address: `0x${string}`) => Promise<void>;
+  googleSignIn: (id: string, credential: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  disconnectWallet: () => void;
   refresh: () => Promise<void>;
   busy: boolean;
   error: string;
 } | null>(null);
+async function accountApi<T>(path: string, options: RequestInit = {}) {
+  return api<T>(`/auth/google${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("pactflow_account") ?? ""}`,
+    },
+  });
+}
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const { address } = useAccount();
+  const { address, status } = useAccount();
+  const currentAddress = useRef(address);
+  currentAddress.current = address;
+  const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
+  const query = useQueryClient();
   const [user, setUser] = useState<Person | null>(null);
+  const [account, setAccount] = useState<AccountIdentity | null>(null);
+  const [guestName, setGuestName] = useState("");
+  const [ready, setReady] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
-      setUser(await api<Person>("/me"));
+      const value = await api<Person>("/me");
+      setUser(
+        value.wallet?.toLowerCase() === address?.toLowerCase() ? value : null,
+      );
     } catch {
       setUser(null);
     }
-  };
+  }, [address]);
   useEffect(() => {
-    void refresh();
+    let nickname = localStorage.getItem("pactflow_guest_name");
+    if (!nickname) {
+      nickname = `Guest-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+      localStorage.setItem("pactflow_guest_name", nickname);
+    }
+    setGuestName(nickname);
+    if (localStorage.getItem("pactflow_account"))
+      void accountApi<AccountIdentity>("/me")
+        .then(setAccount)
+        .catch(() => localStorage.removeItem("pactflow_account"));
   }, []);
   useEffect(() => {
-    if (
-      user &&
-      address &&
-      user.wallet?.toLowerCase() !== address.toLowerCase()
-    ) {
-      window.localStorage.removeItem("pactflow_session");
-      setUser(null);
-    }
-  }, [address, user]);
-  const signIn = async () => {
-    if (!address) return;
+    if (status === "connecting" || status === "reconnecting") return;
+    let active = true;
+    setReady(false);
+    setUser(null);
+    void query.resetQueries({ queryKey: ["product"] });
+    const restore = async () => {
+      const token = localStorage.getItem("pactflow_session");
+      if (token) {
+        try {
+          const value = await api<Person>("/me");
+          if (!active) return;
+          if (address && value.wallet?.toLowerCase() === address.toLowerCase())
+            setUser(value);
+          else {
+            void post("/auth/logout").catch(() => {});
+            localStorage.removeItem("pactflow_session");
+          }
+        } catch {
+          if (active) localStorage.removeItem("pactflow_session");
+        }
+      }
+      if (active) setReady(true);
+    };
+    void restore();
+    return () => {
+      active = false;
+    };
+  }, [address, status, query]);
+  const authenticate = async (walletAddress: `0x${string}`) => {
     setBusy(true);
     setError("");
     try {
       const challenge = await post<{ id: string; message: string }>(
         "/auth/challenge",
-        { address },
+        { address: walletAddress },
       );
-      const signature = await signMessageAsync({ message: challenge.message });
+      const signature = await signMessageAsync({
+        account: walletAddress,
+        message: challenge.message,
+      });
       const session = await post<{ token: string; user: Person }>(
         "/auth/verify",
-        { id: challenge.id, signature },
+        { id: challenge.id, signature, guestName },
       );
-      window.localStorage.setItem("pactflow_session", session.token);
+      if (
+        currentAddress.current?.toLowerCase() !== walletAddress.toLowerCase()
+      ) {
+        await api("/auth/logout", {
+          method: "POST",
+          body: "{}",
+          headers: { Authorization: `Bearer ${session.token}` },
+        }).catch(() => {});
+        throw new Error("WALLET_CHANGED");
+      }
+      localStorage.setItem("pactflow_session", session.token);
       setUser(session.user);
+      void query.resetQueries({ queryKey: ["product"] });
       analytics("wallet_connected");
+      setAuthOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "generic");
+      throw e;
+    } finally {
+      setBusy(false);
+    }
+  };
+  const googleSignIn = async (id: string, credential: string) => {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await post<{ token: string; account: AccountIdentity }>(
+        "/auth/google/verify",
+        { id, credential },
+      );
+      localStorage.setItem("pactflow_account", result.token);
+      setAccount(result.account);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "generic");
+      throw e;
     } finally {
       setBusy(false);
     }
@@ -189,17 +278,34 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     <SessionContext.Provider
       value={{
         user,
-        refresh,
-        signIn,
+        account,
+        guestName: user?.displayName || guestName,
+        ready,
+        authOpen,
         busy,
         error,
-        signOut: () => {
-          void post("/auth/logout").finally(() => {
-            window.localStorage.removeItem("pactflow_session");
-            setUser(null);
-          });
-          window.localStorage.removeItem("pactflow_session");
+        refresh,
+        authenticate,
+        googleSignIn,
+        openAuth: () => {
+          setError("");
+          setAuthOpen(true);
+        },
+        closeAuth: () => setAuthOpen(false),
+        signOut: async () => {
+          try {
+            await accountApi("/logout", { method: "POST", body: "{}" });
+          } finally {
+            localStorage.removeItem("pactflow_account");
+            setAccount(null);
+          }
+        },
+        disconnectWallet: () => {
+          void post("/auth/logout").catch(() => {});
+          localStorage.removeItem("pactflow_session");
           setUser(null);
+          void query.resetQueries({ queryKey: ["product"] });
+          disconnect();
         },
       }}
     >
@@ -237,19 +343,12 @@ export function ErrorMessage({ error }: { error: unknown }) {
 }
 export function SignInCard() {
   const { t } = useI18n();
-  const session = useSession();
-  const { address } = useAccount();
+  const { openAuth } = useSession();
   return (
     <section className="card sign-in">
-      <h3>{t("profile.signIn")}</h3>
-      <p className="small">{t("profile.signHelp")}</p>
-      <WalletBar />
-      {address && (
-        <button disabled={session.busy} onClick={session.signIn}>
-          {t("profile.signIn")}
-        </button>
-      )}
-      <ErrorMessage error={session.error} />
+      <h3>{t("auth.requiredTitle")}</h3>
+      <p className="small">{t("auth.requiredHelp")}</p>
+      <button onClick={openAuth}>{t("auth.start")}</button>
     </section>
   );
 }

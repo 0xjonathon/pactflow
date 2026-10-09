@@ -1,24 +1,19 @@
 "use client";
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import { monadTestnet } from "@pactflow/chain";
 import { useI18n } from "../lib/i18n";
+import { useSession } from "../lib/product";
 
 export function WalletBar() {
   const { t } = useI18n();
   const { address, chainId, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
-  const { disconnect } = useDisconnect();
+  const { openAuth, disconnectWallet } = useSession();
   const { switchChain, isPending: switching } = useSwitchChain();
   if (!isConnected)
     return (
       <div className="wallet">
         <span className="small">{t("wallet.notConnected")}</span>
-        <button
-          disabled={isPending || !connectors[0]}
-          onClick={() => connectors[0] && connect({ connector: connectors[0] })}
-        >
-          {t("wallet.connect")}
-        </button>
+        <button onClick={openAuth}>{t("wallet.connect")}</button>
       </div>
     );
   return (
@@ -46,7 +41,7 @@ export function WalletBar() {
           </button>
         </>
       )}
-      <button className="secondary" onClick={() => disconnect()}>
+      <button className="secondary" onClick={disconnectWallet}>
         {t("wallet.disconnect")}
       </button>
     </div>
@@ -56,8 +51,14 @@ export function WalletBar() {
 export function NetworkGuard({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const { isConnected, chainId } = useAccount();
+  const { openAuth } = useSession();
   if (!isConnected)
-    return <div className="notice">{t("wallet.connectToSubmit")}</div>;
+    return (
+      <div className="notice">
+        <p>{t("wallet.connectToSubmit")}</p>
+        <button onClick={openAuth}>{t("auth.start")}</button>
+      </div>
+    );
   if (chainId !== monadTestnet.id)
     return (
       <div className="notice error">

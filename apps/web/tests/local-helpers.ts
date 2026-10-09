@@ -41,8 +41,10 @@ async function context(
   width: number,
 ) {
   let denyTransaction = false;
+  let denySignature = false;
   const account = privateKeyToAccount(keys[role]);
-  const wallet = createWalletClient({
+  let activeAccount = account;
+  let wallet = createWalletClient({
     account,
     chain: monadTestnet,
     transport: http(env.MONAD_TESTNET_RPC_URL),
@@ -55,15 +57,22 @@ async function context(
     "localWallet",
     async ({ method, params = [] }: { method: string; params: unknown[] }) => {
       if (["eth_accounts", "eth_requestAccounts"].includes(method))
-        return [account.address];
+        return [activeAccount.address];
       if (method === "eth_chainId") return "0x279f";
       if (
         method === "wallet_switchEthereumChain" ||
         method === "wallet_addEthereumChain"
       )
         return null;
-      if (method === "personal_sign")
-        return account.signMessage({ message: { raw: params[0] as Hex } });
+      if (method === "personal_sign") {
+        if (denySignature) {
+          denySignature = false;
+          throw new Error("User rejected the request");
+        }
+        return activeAccount.signMessage({
+          message: { raw: params[0] as Hex },
+        });
+      }
       if (method === "eth_sendTransaction") {
         if (denyTransaction) {
           denyTransaction = false;
@@ -76,7 +85,7 @@ async function context(
           data?: Hex;
           value?: Hex;
         };
-        if (tx.from?.toLowerCase() !== account.address.toLowerCase())
+        if (tx.from?.toLowerCase() !== activeAccount.address.toLowerCase())
           throw new Error("Wrong account");
         return wallet.sendTransaction({
           to: tx.to,
@@ -108,6 +117,13 @@ async function context(
         removeListener: (name: string) => void;
       };
       localWallet: (args: unknown) => Promise<unknown>;
+      emitWalletAccount: (address: string) => void;
+    };
+    bridge.emitWalletAccount = (address) => {
+      const handler = handlers.get("accountsChanged") as
+        | ((accounts: string[]) => void)
+        | undefined;
+      handler?.([address]);
     };
     bridge.ethereum = {
       isMetaMask: true,
@@ -121,6 +137,27 @@ async function context(
   return {
     ctx,
     account,
+    changeWallet: async (nextRole: string) => {
+      activeAccount = privateKeyToAccount(keys[nextRole]);
+      wallet = createWalletClient({
+        account: activeAccount,
+        chain: monadTestnet,
+        transport: http(env.MONAD_TESTNET_RPC_URL),
+      });
+      for (const page of ctx.pages())
+        await page.evaluate(
+          (address) =>
+            (
+              window as unknown as {
+                emitWalletAccount: (address: string) => void;
+              }
+            ).emitWalletAccount(address),
+          activeAccount.address,
+        );
+    },
+    rejectNextSignature: () => {
+      denySignature = true;
+    },
     rejectNextTransaction: () => {
       denyTransaction = true;
     },
@@ -128,14 +165,13 @@ async function context(
 }
 async function login(page: Page, m: typeof en) {
   await page.goto("/pacts/new");
-  await page
-    .locator("main")
-    .getByRole("button", { name: m.wallet.connect, exact: true })
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: m.auth.guest, exact: true }).click();
+  await dialog
+    .getByRole("button", { name: m.auth.connectWallet, exact: true })
     .click();
-  await page
-    .locator("main")
-    .getByRole("button", { name: m.profile.signIn, exact: true })
-    .click();
+  await expect(dialog).not.toBeVisible();
   await expect(page.getByLabel(m.v2.title, { exact: true })).toBeVisible();
   return page.evaluate(() => localStorage.getItem("pactflow_session")!);
 }

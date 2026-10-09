@@ -2,6 +2,7 @@ import { ProtocolIndexer } from "@pactflow/indexer";
 import { registerUploadRoutes } from "./uploads";
 import { registerTrustRoutes } from "./trust";
 import { registerProductRoutes, ProductError } from "./product";
+import { registerGoogleRoutes } from "./google-auth";
 import { config } from "dotenv";
 import { resolve } from "node:path";
 import Fastify from "fastify";
@@ -183,6 +184,7 @@ const idParams = z.object({ id: z.uuid() });
 const escrowParams = z.object({ escrow: address });
 
 const product = await registerProductRoutes(app, db, sdk);
+registerGoogleRoutes(app, db);
 const trust = await registerTrustRoutes(app, db, sdk, product.actor);
 registerUploadRoutes(app, db, product.actor, trust.participant);
 async function verificationAccess(
@@ -419,6 +421,13 @@ app.addHook("onClose", async () => {
   await closeDb();
 });
 const port = Number(process.env.API_PORT ?? 3001);
+for (const signal of ["SIGINT", "SIGTERM"] as const)
+  process.once(signal, () => {
+    void app
+      .close()
+      .then(() => process.exit(0))
+      .catch(() => process.exit(1));
+  });
 app
   .listen({ port, host: "0.0.0.0" })
   .then(() => {

@@ -11,3 +11,9 @@
 Tests run against a fixed optimized Next production build with explicit local-chain public configuration, local API and independent private PGlite database. All money and attestations are real transactions on loopback Anvil with valueless test tokens. Every saved receipt is labelled `LOCAL_TEST_ONLY`.
 
 Public Monad and deployed Linux checks need funded prepared accounts, repository/provider credentials, a server/domain and live production services. Include real provider timeout/outage, DB/Redis/object restart/restore, live GraphQL reorg/latency, fresh browser/cache, public links/network/console and screen-reader review there. Local automation does not prove these gates. Direct invitation token flow belongs to gated P1.
+
+## Account access cases (2026-10-09)
+
+`account.spec.ts` covers four cases in both languages: guest choice and wallet signing/rejection/retry/refresh/disconnect, absence of an installed wallet, wallet account switching with prior-session invalidation, and Google name/refresh/logout kept separate from wallet authority. The Google browser provider is explicitly mocked. Tests also check native modal focus return, menu Escape closing, WCAG rules for modal/menu and at least 24px separation between network filters and the first result card. Screenshots are `login-*.png` and `account-*.png`.
+
+Actual Google OAuth acceptance requires a project Web client ID and authorized origins. Local cryptographic tests verify signed provider tokens, issuer/audience/nonce/expiry/forgery and session replay/logout. No browser mock is treated as an external-provider pass.

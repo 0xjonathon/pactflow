@@ -1,19 +1,19 @@
 {
   "network": "LOCAL_TEST_ONLY",
-  "escrow": "0x9C19E261990CF1005a5681752cC7F25476d13D31",
-  "publicId": "6774aa41-0896-4cd4-a7a2-e5e86e57445e",
+  "escrow": "0x3598ca958c71def6Ed9c1C12BbFC565A70589e84",
+  "publicId": "b0f9155b-509e-49c3-a38a-5f2552eb5716",
   "review": [
     {
-      "id": "4741fc32-0119-46a8-a5a1-0324c571f4f1",
-      "escrowAddress": "0x9c19e261990cf1005a5681752cc7f25476d13d31",
-      "actor": "0x59eb5fe6e962230a165e3cb901e8537d9f9b7d33",
+      "id": "ebde0c2a-472e-44c2-8b33-ebec701edd29",
+      "escrowAddress": "0x3598ca958c71def6ed9c1c12bbfc565a70589e84",
+      "actor": "0x9cc3d73bd95a767bbb229aa83049b86869a32cbe",
       "type": "ManualReviewConfirmed",
       "payload": {
-        "id": "0e600d8b-c0cc-41c5-a119-fd0d200711d4",
-        "txHash": "0x03fb5e5a804471cf275f7511d8453a57ea3de1fc6608646e0eb5f1faf6e2e835",
-        "reportHash": "0xb752ad136dd9431cd35bb72841dfe373f5f65eeaa8d7d39385804b8f33d75a88"
+        "id": "e4479e2e-2a0a-4360-a173-8f675da90aec",
+        "txHash": "0xa72caa5e355d3ef69eb45e63d2d8a777790492fa524f6ad0bb9c1930ef2ad8a1",
+        "reportHash": "0xc608ccdd8e7be939865cdf7f36b94383a47f4dbf272ff2248f7a0d5153de117d"
       },
-      "createdAt": "2026-10-03T20:36:35.262Z"
+      "createdAt": "2026-10-09T03:26:45.947Z"
     }
   ]
 }

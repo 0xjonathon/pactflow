@@ -195,15 +195,22 @@ export async function registerProductRoutes(
     const { address } = z.object({ address: addr }).parse(request.body);
     const id = randomUUID();
     const expiresAt = new Date(Date.now() + 5 * 60_000);
-    const message = `PactFlow settlement account sign-in\nOrigin: ${process.env.WEB_ORIGIN ?? "http://localhost:3001"}\nWallet: ${address}\nNonce: ${id}\nExpires: ${expiresAt.toISOString()}\nThis signature confirms account ownership. It does not move funds.`;
+    const message = `PactFlow wallet ownership verification\nOrigin: ${process.env.WEB_ORIGIN ?? "http://localhost:3001"}\nWallet: ${address}\nNonce: ${id}\nExpires: ${expiresAt.toISOString()}\nThis signature confirms account ownership. It does not move funds.`;
     await db
       .insert(s.authChallenges)
       .values({ id, address, message, expiresAt });
     return { id, message };
   });
   app.post("/api/v1/auth/verify", async (request) => {
-    const { id, signature } = z
-      .object({ id: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) })
+    const { id, signature, guestName } = z
+      .object({
+        id: z.uuid(),
+        signature: z.string().regex(/^0x[0-9a-fA-F]+$/),
+        guestName: z
+          .string()
+          .regex(/^Guest-[A-F0-9]{6}$/)
+          .optional(),
+      })
       .parse(request.body);
     const [challenge] = await db
       .select()
@@ -240,7 +247,9 @@ export async function registerProductRoutes(
           .insert(s.users)
           .values({
             handle: `member-${randomBytes(5).toString("hex")}`,
-            displayName: "New member",
+            displayName:
+              guestName ??
+              `Guest-${randomBytes(3).toString("hex").toUpperCase()}`,
           })
           .returning();
         userId = user.id;

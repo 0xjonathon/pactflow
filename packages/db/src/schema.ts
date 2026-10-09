@@ -184,6 +184,18 @@ export const sessions = pgTable("sessions", {
   address: text("address").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
+export const googleChallenges = pgTable("google_challenges", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nonce: text("nonce").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  used: boolean("used").notNull().default(false),
+});
+export const accountSessions = pgTable("account_sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  subject: text("subject").notNull(),
+  name: text("name").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
 export type JobMilestone = { title: string; amount: string; dueAt: string };
 export const jobs = pgTable("jobs", {
   id: uuid("id").primaryKey().defaultRandom(),

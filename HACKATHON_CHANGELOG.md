@@ -12,3 +12,5 @@
 | 2026-10-04 | Acceptance evidence                       | See final QA commit | 18 local tests pass + 2 external-service skips; Foundry 23 reported passes; eight browser tests pass; zero automated WCAG violations. Public V2/server/provider smoke blocked |
 
 No new public Monad deployment or transfers were performed. Existing V1 deployment receipts remain in `docs/TESTNET.md`. `.local` generated keys and valueless Anvil tokens are development-only. P1 remains behind P0 runtime acceptance.
+
+2026-10-09: separate optional Google accounts from required wallet ownership verification; add guest nicknames and protected-page login dialog; redesign the compact top-right account menu and separate logout from disconnect; add responsive network-filter spacing. Google origin/token/nonce/session checks and migration are implemented. Sixteen browser cases pass, including eight new account cases; actual Google OAuth setup remains pending a project client ID.

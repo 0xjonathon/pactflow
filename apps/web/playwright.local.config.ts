@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "account.spec.ts",
     "local-v2.spec.ts",
     "marketplace-v2.spec.ts",
     "responsive.spec.ts",

@@ -10,20 +10,21 @@
     "seed": "node --import tsx src/seed.ts"
   },
   "dependencies": {
-    "fastify": "^5.5.0",
+    "@pactflow/chain": "workspace:*",
+    "@pactflow/db": "workspace:*",
+    "@pactflow/indexer": "workspace:*",
+    "@pactflow/sdk": "workspace:*",
     "@pactflow/shared": "workspace:*",
     "@pactflow/verifier": "workspace:*",
-    "@pactflow/db": "workspace:*",
-    "@pactflow/sdk": "workspace:*",
-    "@pactflow/chain": "workspace:*",
-    "viem": "^2.40.0",
-    "zod": "^4.6.5",
     "dotenv": "^17.0.0",
     "drizzle-orm": "^0.44.0",
-    "@pactflow/indexer": "workspace:*"
+    "fastify": "^5.5.0",
+    "jose": "^6.2.12",
+    "viem": "^2.40.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "tsx": "^4.20.0",
-    "@electric-sql/pglite": "^0.3.0"
+    "@electric-sql/pglite": "^0.3.0",
+    "tsx": "^4.20.0"
   }
 }

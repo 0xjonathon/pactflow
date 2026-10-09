@@ -274,6 +274,22 @@ for (const [locale, width] of [
         path: resolve(root, `qa/evidence/receipt-${locale}-${width}.png`),
         fullPage: true,
       });
+      // Chain settlement can complete before the asynchronous activity projection catches up.
+      await expect
+        .poll(
+          async () => {
+            const items = (await request(`/activity?escrow=${escrow}`)).data
+              .items as Array<{ name: string }>;
+            return {
+              settled: items.filter((e) => e.name === "MilestoneSettled")
+                .length,
+              revisions: items.filter((e) => e.name === "RevisionRequested")
+                .length,
+            };
+          },
+          { timeout: 45000 },
+        )
+        .toEqual({ settled: 1, revisions: 1 });
       const events = (await request(`/activity?escrow=${escrow}`)).data.items;
       expect(
         events.filter(

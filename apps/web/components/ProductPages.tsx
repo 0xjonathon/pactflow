@@ -882,7 +882,7 @@ export function TalentPage() {
   return (
     <main className="shell">
       <PageTitle title={t("talent.headline")} subtitle={t("talent.subtitle")} />
-      <div className="filter-bar">
+      <div className="filter-bar network-filters">
         <input
           placeholder={t("marketplace.search")}
           aria-label={t("marketplace.search")}

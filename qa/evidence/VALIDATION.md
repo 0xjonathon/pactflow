@@ -15,3 +15,15 @@ Date: 2026-10-04 (Asia/Shanghai). Code: protocol `bb775ba`, trust `3473b6a`, ind
 All chain evidence is `LOCAL_TEST_ONLY`, chain ID 10143 on loopback Anvil, test token without value. Do not submit local hashes as public Monad links. No ephemeral private key, authorization token, signed raw transaction or database is included. Runtime keys/env/database remain ignored under `.local` and are excluded from artifact uploads.
 
 See `qa/PRODUCTION_AUDIT.md` for the public service/deployment blockers. CI provisioning is committed but no remote CI execution is claimed.
+
+## Account access acceptance — 2026-10-09
+
+- `pnpm typecheck`: scripts and ten packages PASS; 727 bilingual keys.
+- `pnpm lint`, `pnpm format:check`, `git diff --check`: PASS.
+- Application/security suite: 22 cases, 20 PASS and 2 real PostgreSQL/Redis SKIP. New Google tests verify issuer/audience/nonce/expiry/signature, replay, account-vs-wallet authorization, session hashing/logout, and legacy placeholder migration.
+- Final optimized production Web build: PASS.
+- Final complete browser run: **16/16 PASS in 3.1 minutes**. Eight account cases (four per language), plus the original automatic/manual collaboration, viewport and accessibility cases. Local Activity indexing is explicitly awaited before asserting exactly one settlement and revision event.
+- `login-{en,zh-CN}.png`, `account-{en,zh-CN}.png`: actual guest login dialog and account menu at desktop/mobile sizes. No authorization token or private key is shown.
+- Google browser account-name/refresh/logout tests use an explicitly mocked provider. Real Google OAuth login remains BLOCKED until `GOOGLE_CLIENT_ID` and its authorized origin are configured. Guest wallet signatures and all collaboration transactions use the actual local chain.
+
+Earlier account failures (active-cache deletion) and one index-lag assertion were corrected and rechecked; the final full run has zero failures. Startup build/dev conflicts were resolved, the old local databases were retained, and normal API termination now closes database resources. Unchanged contract evidence remains the prior 2026-10-04 run. No public chain transaction or external deployment is claimed.
