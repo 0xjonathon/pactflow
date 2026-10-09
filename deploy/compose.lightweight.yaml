@@ -5,7 +5,7 @@ x-api: &api
     context: ..
     dockerfile: deploy/Dockerfile.lightweight
   env_file: /opt/pactflow/shared/runtime.env
-  mem_limit: 384m
+  mem_limit: 512m
   cpus: 0.8
   init: true
   security_opt: [no-new-privileges:true]
@@ -83,7 +83,7 @@ services:
   ingress:
     image: caddy:2-alpine
     restart: unless-stopped
-    mem_limit: 64m
+    mem_limit: 96m
     environment:
       API_HOST: ${API_HOST:?required}
     ports: ["80:80", "18443:18443"]
