@@ -32,13 +32,6 @@ function getMessage(locale: Locale, key: MessageKey): string {
   return dictionary[item] ?? key;
 }
 
-function browserLocale(): Locale {
-  return navigator.languages?.some((value) => /^zh(?:-|$)/i.test(value)) ||
-    /^zh(?:-|$)/i.test(navigator.language)
-    ? "zh-CN"
-    : "en";
-}
-
 export function I18nProvider({
   children,
   initialLocale,
@@ -54,9 +47,9 @@ export function I18nProvider({
     const saved = window.localStorage.getItem("pactflow_locale");
     if (!cookie)
       updateLocale(
-        saved === "en" || saved === "zh-CN" ? saved : browserLocale(),
+        saved === "en" || saved === "zh-CN" ? saved : initialLocale,
       );
-  }, []);
+  }, [initialLocale]);
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
