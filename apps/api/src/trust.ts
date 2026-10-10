@@ -791,6 +791,15 @@ export async function registerTrustRoutes(
     commit: process.env.RELEASE_COMMIT ?? null,
     repository: process.env.PUBLIC_REPOSITORY_URL ?? null,
   }));
+  app.get("/api/v1/pacts/:escrow/disclosure", async (req) => {
+    const { escrow } = params.parse(req.params);
+    await participant(req, escrow);
+    const [disclosure] = await db
+      .select()
+      .from(s.publicDisclosures)
+      .where(eq(s.publicDisclosures.escrowAddress, escrow));
+    return disclosure ?? null;
+  });
   app.post("/api/v1/pacts/:escrow/disclosure", async (req) => {
     const { escrow } = params.parse(req.params);
     const { a, pact } = await participant(req, escrow);
@@ -813,12 +822,29 @@ export async function registerTrustRoutes(
         .from(s.publicDisclosures)
         .where(eq(s.publicDisclosures.escrowAddress, escrow));
       if (old.payloadHash !== payloadHash) fail(409, "DISCLOSURE_MISMATCH");
-      await tx
+      const approved = await tx
         .update(s.publicDisclosures)
         .set(client ? { clientApproved: true } : { workerApproved: true })
-        .where(eq(s.publicDisclosures.escrowAddress, escrow));
+        .where(
+          and(
+            eq(s.publicDisclosures.escrowAddress, escrow),
+            eq(
+              client
+                ? s.publicDisclosures.clientApproved
+                : s.publicDisclosures.workerApproved,
+              false,
+            ),
+          ),
+        )
+        .returning();
+      if (approved.length)
+        await tx.insert(s.auditEvents).values({
+          escrowAddress: escrow,
+          actor: a.address,
+          type: "PublicDisclosureApproved",
+          payload: { payloadHash },
+        });
     });
-    await audit(escrow, a.address, "PublicDisclosureApproved", { payloadHash });
     return (
       await db
         .select()

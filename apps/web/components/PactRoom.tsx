@@ -30,6 +30,7 @@ import {
   readableError,
 } from "../features/transaction/useTransactionFlow";
 import { PactReviewPanel } from "./PactReviewPanel";
+import { PactReceipt } from "./PactReceipt";
 import { TrustPanel } from "./TrustPanel";
 import { ActivityList, type ActivityEvent } from "./NetworkPages";
 type Milestone = {
@@ -149,9 +150,7 @@ export function PactRoom({ escrow }: { escrow: Address }) {
     [reason, setReason] = useState(""),
     [error, setError] = useState<unknown>(),
     [busy, setBusy] = useState(false),
-    [syncPending, setSyncPending] = useState(false),
-    [publicId, setPublicId] = useState(""),
-    [receiptTitle, setReceiptTitle] = useState("");
+    [syncPending, setSyncPending] = useState(false);
   const audit = useData<
     Array<{
       id: string;
@@ -458,21 +457,6 @@ export function PactRoom({ escrow }: { escrow: Address }) {
       setBusy(false);
     }
   };
-  const publish = () =>
-    perform(async () => {
-      const result = await post<{
-        publicId: string;
-        clientApproved: boolean;
-        reviewDeadline?: string;
-        workerApproved: boolean;
-      }>(`/pacts/${escrow}/disclosure`, {
-        title: receiptTitle || spec.data?.spec.title || "PactFlow",
-        description: "",
-      });
-      setPublicId(
-        result.clientApproved && result.workerApproved ? result.publicId : "",
-      );
-    });
   if (!pact)
     return (
       <main className="shell">
@@ -607,25 +591,14 @@ export function PactRoom({ escrow }: { escrow: Address }) {
                       {t("v2.accept")}
                     </button>
                   )}
-                {pact.status === "Completed" && user && (
-                  <>
-                    <h3>{t("v2.receipt")}</h3>
-                    <label>
-                      {t("v2.shareTitle")}
-                      <input
-                        value={receiptTitle}
-                        onChange={(e) => setReceiptTitle(e.target.value)}
-                      />
-                    </label>
-                    <button disabled={busy} onClick={publish}>
-                      {t("v2.publish")}
-                    </button>
-                    {publicId ? (
-                      <Link href={`/p/${publicId}`}>{t("v2.openReceipt")}</Link>
-                    ) : (
-                      <p className="small">{t("v2.consentPending")}</p>
-                    )}
-                  </>
+                {pact.status === "Completed" && user && (client || builder) && (
+                  <PactReceipt
+                    key={`${escrow}-${address}`}
+                    escrow={escrow}
+                    address={address!}
+                    role={client ? "client" : "worker"}
+                    defaultTitle={spec.data?.spec.title ?? "PactFlow"}
+                  />
                 )}
               </>
             )}

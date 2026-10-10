@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { eq } from "drizzle-orm";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
@@ -11,7 +12,7 @@ import * as schema from "@pactflow/db";
 import { registerProductRoutes, ProductError } from "./product";
 import { registerTrustRoutes } from "./trust";
 import { VerificationRepository } from "@pactflow/verifier";
-test("V1 migration, private evidence, immutable agreement, logout and verification claim concurrency", async () => {
+test("V1 migration, private evidence, immutable agreement, logout, verification concurrency and two-party receipt consent", async () => {
   const storage = new PGlite();
   for (const file of readdirSync(
     new URL("../../../packages/db/drizzle", import.meta.url),
@@ -249,6 +250,96 @@ test("V1 migration, private evidence, immutable agreement, logout and verificati
     await repo.retryJob(jobs[0].id);
     assert.equal((await repo.getJob(jobs[0].id))?.status, "QUEUED");
     assert.equal((await db.select().from(schema.submissions)).length, 1);
+    // Disclosure consent is separate from settlement and survives both users reloading.
+    const disclosurePath = path + "/disclosure";
+    const disclosurePayload = {
+      title: "Public delivery result",
+      description:
+        "A deliberately nonempty public description approved verbatim.",
+    };
+    const approveDisclosure = (
+      headers: typeof c,
+      payload = disclosurePayload,
+    ) => app.inject({ method: "POST", url: disclosurePath, headers, payload });
+    assert.equal(
+      (await app.inject({ url: disclosurePath, headers: c })).json(),
+      null,
+    );
+    assert.equal((await approveDisclosure(c)).json().code, "PACT_NOT_SETTLED");
+    pact.status = "Completed";
+    await db.insert(schema.pacts).values({
+      address: escrow,
+      chainId: 10143,
+      client: client.address.toLowerCase(),
+      worker: worker.address.toLowerCase(),
+      completed: true,
+      snapshot: {
+        protocolVersion: 2,
+        status: "Completed",
+        totalBudget: "1000000",
+        releasedBudget: "1000000",
+        agreementHash: pact.agreementHash,
+      },
+    });
+    assert.equal((await app.inject({ url: disclosurePath })).statusCode, 401);
+    assert.equal(
+      (await app.inject({ url: disclosurePath, headers: o })).statusCode,
+      403,
+    );
+    assert.equal((await approveDisclosure(o)).statusCode, 403);
+    // Concurrent retries by one actor record a single consent and audit event.
+    const approvals = await Promise.all(
+      Array.from({ length: 4 }, () => approveDisclosure(c)),
+    );
+    assert.ok(approvals.every((r) => r.statusCode === 200));
+    const proposed = (
+      await app.inject({ url: disclosurePath, headers: w })
+    ).json();
+    assert.deepEqual(proposed.payload, disclosurePayload);
+    assert.equal(proposed.clientApproved, true);
+    assert.equal(proposed.workerApproved, false);
+    const receiptPath = `/api/v1/receipts/${proposed.publicId}`;
+    assert.equal((await app.inject({ url: receiptPath })).statusCode, 404);
+    const mismatch = await approveDisclosure(w, {
+      ...disclosurePayload,
+      description: "",
+    });
+    assert.equal(mismatch.statusCode, 409);
+    assert.equal(mismatch.json().code, "DISCLOSURE_MISMATCH");
+    const unchanged = (
+      await app.inject({ url: disclosurePath, headers: w })
+    ).json();
+    assert.deepEqual(unchanged.payload, disclosurePayload);
+    assert.equal(unchanged.workerApproved, false);
+    // The worker confirms the server's proposal instead of reconstructing it.
+    assert.equal(
+      (await approveDisclosure(w, unchanged.payload)).statusCode,
+      200,
+    );
+    assert.equal(
+      (await approveDisclosure(w, unchanged.payload)).statusCode,
+      200,
+    );
+    const clientReload = (
+      await app.inject({ url: disclosurePath, headers: c })
+    ).json();
+    const workerReload = (
+      await app.inject({ url: disclosurePath, headers: w })
+    ).json();
+    assert.deepEqual(clientReload, workerReload);
+    assert.equal(clientReload.publicId, proposed.publicId);
+    assert.ok(clientReload.clientApproved && clientReload.workerApproved);
+    const receipt = (await app.inject({ url: receiptPath })).json();
+    assert.equal(receipt.description, disclosurePayload.description);
+    assert.equal(receipt.snapshot.status, "Completed");
+    assert.ok(!JSON.stringify(receipt).includes(spec.outcome));
+    assert.ok(!JSON.stringify(receipt).includes("Secret criteria"));
+    const consentEvents = await db
+      .select()
+      .from(schema.auditEvents)
+      .where(eq(schema.auditEvents.type, "PublicDisclosureApproved"));
+    assert.equal(consentEvents.length, 2);
+    assert.equal(new Set(consentEvents.map((e) => e.actor)).size, 2);
     assert.equal(
       (
         await app.inject({

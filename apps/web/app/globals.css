@@ -3452,3 +3452,50 @@ main footer.small a.brand {
     justify-self: start;
   }
 }
+
+.pact-receipt {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.pact-receipt h3 {
+  margin: 0;
+}
+.pact-receipt p {
+  margin: 8px 0 0;
+}
+.pact-receipt form {
+  display: grid;
+  gap: 14px;
+}
+.pact-receipt button,
+.pact-receipt .button {
+  justify-self: start;
+}
+.receipt-copy {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.receipt-consents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 0;
+}
+.receipt-consents > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.receipt-consents dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+.receipt-consents dd {
+  margin: 0;
+  font-size: 14px;
+}
