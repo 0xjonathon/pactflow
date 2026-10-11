@@ -1,67 +1,138 @@
-<p align="center"><img src="assets/brand/pactflow-logo.png" width="160" alt="PactFlow logo" /></p>
+<p align="center"><img src="assets/brand/pactflow-logo.png" width="120" alt="PactFlow logo" /></p>
 
 # PactFlow
 
-PactFlow connects clients and collaborators through escrow, verified delivery, and real reputation, making work and payments more trustworthy.
+**Secure milestone payments. Verify delivery. Build a portable work history.**
 
-Publish a brief → Select a partner → Agree on milestones → Secure payment → Verify delivery → Build reputation.
+PactFlow is a collaboration platform on Monad that connects clients and contributors through partner discovery, milestone agreements, escrow, delivery review, and settlement.
 
-## What you can do
+[Live product](https://pactflow-lovat.vercel.app/) · [Product demo](https://youtu.be/zcTFd6u4eO8) · [Pitch video](https://youtu.be/NLe_BA39Z2k) · [Public work receipt](https://pactflow-lovat.vercel.app/p/fe611fdc-2b9f-4a88-8693-2f4899ac8660)
 
-- Publish a work brief, receive applications, and select a partner before creating an agreement. Known partners can create an agreement directly.
-- Confirm milestone amounts, deadlines, acceptance rules, revisions, and participant wallets before locking funds.
-- Submit private evidence, inspect verification reports, revise failed work, and settle accepted milestones through smart contracts.
-- Follow real activity and delivery history in a Work Passport; share a redacted receipt only with both participants' consent.
-- Use English or Chinese on desktop and mobile. Wallet access is required for protected actions; optional Google identity is separate from wallet authority.
+![PactFlow homepage in English](docs/screenshots/home-en.png)
 
-See [the product journey](docs/PRODUCT_JOURNEY.md), [hackathon submission copy](docs/HACKATHON_SUBMISSION.md), and [validation evidence](qa/evidence/VALIDATION.md).
+## Why PactFlow
 
-![English product journey](qa/evidence/journey-en.png)
+Clients want confidence that delivered work meets their requirements. Contributors want confidence that they will get paid. Conversations, files, payments, and reputation often live in separate tools, leaving both sides without a shared record of what was agreed and completed.
 
-## Current status
+PactFlow brings that workflow together. Clients secure the budget in a smart contract; contributors submit evidence against agreed milestones; accepted work releases payment and becomes part of a verifiable work history. Our initial use case is Monad ecosystem teams commissioning scoped development, design, and documentation tasks.
 
-[PactFlow](https://pactflow-lovat.vercel.app) is hosted on Vercel and connected to the API on a separate Aliyun server. V2 contracts are deployed on Monad Testnet; a real manual-acceptance workflow has settled test USDC. AI semantic review and Google sign-in require their respective service credentials. See [Vercel deployment](deploy/VERCEL.md).
+## How it works
 
-V1 contracts and deployment records remain available; new revision-capable Pacts use separately configured V2 contracts. These identifiers describe contract compatibility, not the product name. Local chain acceptance and a public testnet settlement have been verified. Broader production acceptance remains subject to the configured services and recorded checks. See [production audit](qa/PRODUCTION_AUDIT.md).
+1. **Find a partner.** Publish a work brief, receive applications, and choose a contributor. Already know your partner? Create an agreement directly.
+2. **Agree on the work.** Confirm deliverables, milestone amounts, deadlines, acceptance rules, revision limits, and participant wallets before funding.
+3. **Secure payment.** The client locks funds in the agreement's escrow contract, and the contributor accepts the agreement.
+4. **Deliver and review.** Submit evidence, inspect the result, and request specific revisions when needed. Submission history is retained.
+5. **Settle and build history.** Accepted milestones pay the contributor directly. Completed work contributes to a Work Passport and activity history. Both participants can approve a public work receipt.
 
-[Download the transparent PactFlow logo](assets/brand/pactflow-logo.png) for the hackathon submission (1254 × 1254 PNG, under 2 MB).
+A work brief helps people find each other. A Pact records the terms they have both accepted and enforces the payment workflow.
 
-## Local acceptance
+## Try it as a judge
 
-Use Node 24, pnpm 11.25.0 and Monad Foundry. Install with `corepack pnpm install --frozen-lockfile`; run `sh scripts/bootstrap-foundry.sh` for the pinned contract test library.
+- **Start with the [product demo](https://youtu.be/zcTFd6u4eO8)** for the client and contributor workflow, including delivery, revision, and settlement.
+- **Open the [public receipt](https://pactflow-lovat.vercel.app/p/fe611fdc-2b9f-4a88-8693-2f4899ac8660)** to inspect completed work and follow its settlement transaction. No login or wallet is required to view it.
+- **Explore the [live app](https://pactflow-lovat.vercel.app/).** First-time visitors see English; Chinese is available from the language menu. An explicitly chosen language is remembered.
+- **To perform wallet actions,** connect an EVM wallet on Monad Testnet (chain ID `10143`) and sign the authentication challenge. Account registration is optional; guest wallet access is supported. A complete collaboration uses separate client and contributor wallets, test MON for gas, and the deployed test settlement token listed below.
 
-Start Anvil in its own terminal:
+The verified public acceptance path is client review: the contributor submits delivery, and the client either requests a revision or approves settlement. Publishing a receipt is a separate, optional action after completion; both parties must approve exactly the same public content.
+
+## Real Monad Testnet execution
+
+The public product is connected to deployed contracts and a persistent backend. A completed collaboration has released **1 test USDC** and produced a public receipt approved by both participants.
+
+| Evidence               | Link                                                                                                                   |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Public work receipt    | [View the completed collaboration](https://pactflow-lovat.vercel.app/p/fe611fdc-2b9f-4a88-8693-2f4899ac8660)           |
+| Agreement contract     | [`0xbd83…4ce1`](https://testnet.monadvision.com/address/0xbd83dbde3e718f7d7b1b2788f7d1b9d63fe84ce1)                    |
+| Settlement transaction | [`0x9cb4…6927`](https://testnet.monadvision.com/tx/0x9cb4d13bbb8dee8982bc72bfe61a12acc16e6f650d6b0e2c541a3bc86e9f6927) |
+
+Current deployment: **Monad Testnet · chain ID 10143 · protocol V2**.
+
+| Contract                   | Address                                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| PactFactoryV2              | [`0xbce5397fc2ec37769d664961405707fec1c6da69`](https://testnet.monadvision.com/address/0xbce5397fc2ec37769d664961405707fec1c6da69) |
+| VerifierRegistryV2         | [`0x2038b44c4b05bc2eb01f031f2f91e02baa1b9a18`](https://testnet.monadvision.com/address/0x2038b44c4b05bc2eb01f031f2f91e02baa1b9a18) |
+| ReputationRegistryV2       | [`0x3dd792ca984322e84864ec9fb47e237f51707a64`](https://testnet.monadvision.com/address/0x3dd792ca984322e84864ec9fb47e237f51707a64) |
+| Test USDC settlement token | [`0x534b2f3A21130d7a60830c2Df862319e593943A3`](https://testnet.monadvision.com/address/0x534b2f3A21130d7a60830c2Df862319e593943A3) |
+
+The [deployment record](packages/chain/src/addresses/monad-testnet-v2.json) includes deployment transactions, blocks, and code hashes. New agreements use V2 for revisions; historical V1 contracts and records are retained. Protocol versions describe contract compatibility; the product name is **PactFlow**.
+
+## Payments, verification, and privacy
+
+- **Escrow pays the contributor.** For manual acceptance, the client signs the settlement transaction and the contract transfers the milestone payment directly. The platform dispute resolution wallet arbitrates disputes; it does not custody the budget or sign every normal payout.
+- **Funded terms are locked.** Participant roles and contract state determine available actions. V2 verification signatures bind to the current submission and prevent stale attestations and repeated settlement.
+- **Delivery can improve.** Agreements default to an initial submission plus two revisions; limits are confirmed before funding. Recoverable verification service errors do not count as failed delivery attempts.
+- **Evidence is private by default.** Participant-authorized evidence and reports stay behind access checks. Public receipts expose only the content both parties approved; private evidence is not automatically published on-chain.
+- **History comes from actual execution.** Work history and metrics use indexed contract events and verification records. Missing data is shown as unavailable rather than replaced with invented scores.
+
+The live manual review workflow works independently of optional integrations. AI review requires a configured model and API key; Google identity requires OAuth configuration; private file uploads require object storage and scanning. GitHub/CI checks use pinned commits and actual check results. External verifier adapters require registration and authentication. Unconfigured capabilities are reported as unavailable, and service failures never produce a passing attestation.
+
+## Architecture
+
+| Component              | Implementation                                                               | Source                                                         |
+| ---------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Web application        | Next.js, React, wallet interaction, English/Chinese UI                       | [apps/web](apps/web)                                           |
+| API                    | Fastify, wallet authentication, object permissions, submissions and receipts | [apps/api](apps/api)                                           |
+| Verification           | Evidence normalization, checks, review policies, reports and attestations    | [apps/verifier](apps/verifier)                                 |
+| Data                   | Drizzle, PostgreSQL, append-only submission and verification history         | [packages/db](packages/db)                                     |
+| Contracts              | Solidity, Foundry, escrow and verifier/reputation registries                 | [packages/contracts](packages/contracts)                       |
+| SDK and chain bindings | TypeScript, viem, version-aware contract interaction                         | [packages/sdk](packages/sdk), [packages/chain](packages/chain) |
+| Read model             | Envio handlers and persistent event synchronization                          | [indexer](indexer)                                             |
+
+The public web app runs on **Vercel**. Its independent backend runs on **Aliyun with Docker Compose**, PostgreSQL, Redis, HTTPS, and a durable verification worker. This deployment explicitly uses bounded Monad RPC event indexing. The full deployment supports Envio GraphQL and a separate worker; production indexing does not silently change sources on failure.
+
+See the [current lightweight deployment](deploy/LIGHTWEIGHT.md) and [full Linux deployment guide](deploy/README.md) for configuration, migrations, health checks, backups, and recovery.
+
+## Run locally
+
+Prerequisites: **Node.js 24**, **pnpm 11.25.0** through Corepack, and **Monad Foundry** (`forge` and `anvil`).
+
+```sh
+git clone https://github.com/0xjonathon/pactflow.git
+cd pactflow
+corepack pnpm install --frozen-lockfile
+sh scripts/bootstrap-foundry.sh
+forge build --root packages/contracts
+```
+
+Start the isolated local chain in a separate terminal:
 
 ```sh
 anvil --host 127.0.0.1 --port 8547 --chain-id 10143 --block-time 1
 ```
 
-Then from this independent directory:
+Then deploy local contracts and start the API and web app from the repository root:
 
 ```sh
 corepack pnpm local:deploy
 corepack pnpm local:services
 ```
 
-Open http://localhost:3011. The helper uses a new private local database and generated test wallets, deploys V2 only on loopback Anvil and mints valueless test tokens. Generated `.local` files contain private keys and must never be uploaded or reused publicly. Browser tests inject signing through their Node process; keys do not enter browser code.
+Open [localhost:3011](http://localhost:3011). The helper generates local test wallets and tokens, configures the services, and creates an isolated PGlite database. This path does not require a PostgreSQL server or broadcast public-chain transactions. Generated `.local` files contain test private keys: keep them private and never reuse those keys on public networks.
 
-In another terminal:
+## Validation
+
+Generate indexer types before running workspace checks:
 
 ```sh
+corepack pnpm --filter @pactflow/indexer codegen
 corepack pnpm typecheck
 corepack pnpm lint
 corepack pnpm format:check
 corepack pnpm test
 corepack pnpm test:contracts
+```
+
+With Anvil and the local services running, install the browser and run the two-party workflow tests:
+
+```sh
+corepack pnpm --filter @pactflow/web exec playwright install chromium
 corepack pnpm test:e2e:local
 ```
 
-Production build: stop local Next dev before `corepack pnpm build`. Real PostgreSQL/Redis integration tests run only with `TEST_DATABASE_URL` / `TEST_REDIS_URL` pointing at dedicated loopback test services; skipped tests are not passes. CI provisions both services and runs local-chain browser acceptance without public-chain broadcasting.
+For a production build, stop the local Next.js development server before running `corepack pnpm build`.
 
-## Production and protocol
+The [CI workflow](.github/workflows/ci.yml) runs type, translation, lint, formatting, unit, integration, contract, build, and local-chain browser checks. PostgreSQL/Redis integration tests require dedicated loopback services configured through `TEST_DATABASE_URL` and `TEST_REDIS_URL`; CI supplies them. Skipped integration tests are not passes. CI does not broadcast transactions on public chains.
 
-New agreements use the configured platform dispute resolution wallet (`NEXT_PUBLIC_ARBITRATOR_ADDRESS`, default `0x786e6F51E928286D35084129f359c6fEa391357E`) without asking participants to enter it. It must differ from both participants. Existing agreements retain their locked arbitrator. This wallet resolves disputes; it does not custody the milestone budget. Normal manual acceptance is signed by the requester, and the escrow contract pays the worker directly. Automated acceptance uses the verifier configured in the contract, which is a separate role.
+Recorded local results are available in [validation evidence](qa/evidence/VALIDATION.md). Public-chain execution can be inspected through the receipt and explorer links above. The contracts have not undergone an independent security audit.
 
-[Linux Compose setup](deploy/README.md) covers PostgreSQL, Redis, private objects/scanner, separate worker, Envio and TLS, backups and restore checks. Public V2 deployment is an explicit operator command (`deploy:v2:testnet`) using funded local credentials; it validates and records fresh contracts without replacing V1. Do not run it as a local or CI prerequisite.
-
-Read [product source of truth](product/PRODUCT.md), [dependency graph](product/P0_DEPENDENCIES.md), [state machine](specs/pact-state-machine.md), [API contract](specs/api-contracts.md), [acceptance matrix](qa/E2E_MATRIX.md) and [judge demonstration](qa/JUDGE_DEMO.md). Original V1 instructions are retained in [README-V1](docs/README-V1.md).
+[Download the project logo](assets/brand/pactflow-logo.png) · [Legacy V1 documentation](docs/README-V1.md)
