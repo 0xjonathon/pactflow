@@ -7,7 +7,8 @@ function unavailable() {
   );
 }
 
-// This deployment only serves the website; it never manufactures API data.
+// Fail closed when no upstream is configured. Configured requests are forwarded
+// by the beforeFiles rewrite, including Authorization, method, body and query.
 export const GET = unavailable;
 export const POST = unavailable;
 export const PUT = unavailable;

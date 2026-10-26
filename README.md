@@ -78,7 +78,7 @@ The live manual review workflow works independently of optional integrations. AI
 | SDK and chain bindings | TypeScript, viem, version-aware contract interaction                         | [packages/sdk](packages/sdk), [packages/chain](packages/chain) |
 | Read model             | Envio handlers and persistent event synchronization                          | [indexer](indexer)                                             |
 
-The public web app runs on **Vercel**. Its independent backend runs on **Aliyun with Docker Compose**, PostgreSQL, Redis, HTTPS, and a durable verification worker. This deployment explicitly uses bounded Monad RPC event indexing. The full deployment supports Envio GraphQL and a separate worker; production indexing does not silently change sources on failure.
+The public web app runs on **Vercel**. Production browsers call the website's own `/api/v1` paths; Vercel forwards those requests to the configured HTTPS backend. Its independent backend runs on **Aliyun with Docker Compose**, PostgreSQL, Redis, HTTPS, and a durable verification worker. This deployment explicitly uses bounded Monad RPC event indexing. The full deployment supports Envio GraphQL and a separate worker; production indexing does not silently change sources on failure.
 
 See the [current lightweight deployment](deploy/LIGHTWEIGHT.md) and [full Linux deployment guide](deploy/README.md) for configuration, migrations, health checks, backups, and recovery.
 

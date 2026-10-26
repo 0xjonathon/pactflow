@@ -1,35 +1,41 @@
-# PactFlow website on Vercel
+# PactFlow on Vercel
 
 Public website: https://pactflow-lovat.vercel.app
 
-This is a frontend-only browsing preview, authorized on 2026-10-09. It does not claim that the current revision-capable agreement workflow is live. No API, PostgreSQL, Redis, verification worker, object storage/scanner or Envio service was provisioned by this deployment. Google identity and protected collaboration actions remain unavailable.
+The Next.js application runs on Vercel. The Fastify API, PostgreSQL, Redis, verification worker and persistent event read model run on the independent backend described in [the lightweight deployment guide](LIGHTWEIGHT.md).
+
+## Request routing
+
+In production, browser requests use the website's own `/api/v1/...` paths. A Next.js `beforeFiles` rewrite forwards them to the backend configured at build time. The rewrite runs before the catch-all API route and preserves the request method, query string, body and authorization header. Browser sessions and wallet permissions remain enforced by the backend.
+
+Set `INTERNAL_API_URL` to the backend's HTTPS origin. `NEXT_PUBLIC_API_URL` is accepted as a compatibility fallback and remains available for direct local development. Production browser code always uses same-origin paths. Server-rendered receipt metadata uses the configured backend directly.
+
+The upstream must be an HTTP(S) origin without credentials, a path, query string or fragment. Changes require a rebuild. When neither upstream variable is configured, the API route returns JSON 503 `BACKEND_NOT_CONFIGURED`; it never invents application data or contacts a visitor's localhost.
+
+This routing removes the requirement for a visitor's browser to reach the backend IP and port directly. It still requires Vercel to reach the backend over valid HTTPS. It does not relocate the database or keep a stopped backend running.
 
 ## Project configuration
 
-- Vercel team: `thress`; project: `pactflow`.
-- Repository root: the PactFlow monorepo; project Root Directory: `apps/web`.
-- Framework: Next.js; Node: `24.x`.
-- `apps/web/vercel.json` configures `corepack enable && corepack pnpm install --frozen-lockfile` and `pnpm build`.
-- Production environment: `NEXT_PUBLIC_DEPLOYMENT_MODE=frontend`. This is a public display flag, not a credential.
-- `.vercelignore` excludes local env files, wallets, databases, dependencies and build caches. `.vercel` and `.env.local` are ignored by Git. Never copy the local acceptance environment into Vercel settings.
+- Project: `pactflow`; repository Root Directory: `apps/web`.
+- Framework: Next.js; Node.js: `24.x`.
+- `apps/web/vercel.json` contains the install and build commands.
+- Retain the deployed protocol addresses and public Monad RPC configuration.
+- Keep the exact production website origin in the backend's `WEB_ORIGIN` and wallet authentication configuration.
+- Signing keys and database credentials belong only on the backend, never in `NEXT_PUBLIC_*` variables.
+- `.vercel`, downloaded environment files, local wallets, databases and caches are excluded from Git and deployment uploads.
 
-Link with the official Vercel CLI from the repository root:
+## Release checks
 
-```sh
-vercel link --yes --scope thress --project pactflow
-vercel deploy --prod --yes --scope thress
-```
+Build a preview before switching production. Verify the following through the Vercel website origin:
 
-The project environment retains the preview flag. Metadata uses the configured site URL or Vercel's production domain. Unconfigured browser API requests stay on the public origin and receive a JSON 503 `BACKEND_NOT_CONFIGURED`; they do not contact the visitor's localhost. Unknown/unavailable public receipts do not expose evidence.
+1. `/api/v1/stats`, `/api/v1/jobs` and `/api/v1/indexer/health` return actual backend JSON.
+2. A valid public receipt still has its original public ID, settlement transaction and consented content.
+3. `/api/v1/me` rejects unauthenticated access, and a signed wallet challenge authenticates only its wallet.
+4. Request bodies, query parameters and authorization headers survive forwarding. Private evidence remains inaccessible to non-participants.
+5. Fresh browser visits load the home, discovery and receipt pages; English/Chinese switching still works.
 
-## Completing the working product
+Keep a database backup and the previous deployment available before promotion. If any check fails, retain the previous production deployment and investigate the upstream. See [container operations](README.md) for backend recovery.
 
-Deploy and validate the backend services described in [the container guide](README.md). Deploy the revision-capable contracts separately, retain existing V1 records and complete actual Monad smoke tests. Configure `NEXT_PUBLIC_API_URL` to the real HTTPS API, `INTERNAL_API_URL` where required, fresh contract addresses, and the public site's exact origin on the API. No signing keys belong in browser environment variables.
+## Protocol
 
-Remove the frontend-only flag only after these services and the signed two-user flow pass. Rebuild and check a new unauthenticated browser, mobile/English/Chinese, API interruptions, privacy and public receipt consent before claiming a working public product.
-
-## Testnet status
-
-Read-only Monad RPC validation on 2026-10-09 returned chain ID 10143, nonempty code at the retained factory `0xb9d75193df4ab985e5c2a5a1b0e332946d405d1a`, and success (`0x1`) for the recorded settlement `0xe5c1f26a27aa566f47c43bd16c8fef167b474327f3029fe133cc926ff831d8ea` (block `0x4004ca5`). These are legacy protocol records; no new contract deployment or funds transfer was broadcast during the website deployment.
-
-The current protocol still has no public V2 deployment record. Frontend hosting and historical testnet settlement do not establish acceptance of its new revision workflow.
+Current contracts run on Monad Testnet, chain ID `10143`. The [V2 deployment record](../packages/chain/src/addresses/monad-testnet-v2.json) contains addresses and deployment evidence. Retain historical V1 records. A website routing change does not deploy contracts or broadcast settlement transactions.

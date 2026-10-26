@@ -13,8 +13,9 @@ import { useAccount, useSignMessage, useDisconnect } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useI18n, type MessageKey } from "./i18n";
 export const API =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === "production" ? "" : "http://localhost:3002");
+  process.env.NODE_ENV === "production"
+    ? ""
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
 export type Metrics = {
   passRate?: number | null;
   revisionRate?: number | null;
